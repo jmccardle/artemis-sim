@@ -1,0 +1,243 @@
+{
+  "realm": "artemis-sim",
+  "enabled": true,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "sslRequired": "none",
+  "defaultSignatureAlgorithm": "RS256",
+  "roles": {
+    "realm": [
+      {
+        "name": "nasa-program-manager",
+        "description": "NASA Program Manager — mission oversight, milestone approval"
+      },
+      {
+        "name": "nasa-tech-authority",
+        "description": "NASA Technical Authority — validate contractor work, review test results"
+      },
+      {
+        "name": "nasa-contracts-officer",
+        "description": "NASA Contracts Officer — authorize payments, manage contracts"
+      },
+      {
+        "name": "contractor-pm",
+        "description": "Contractor Project Manager — submit proposals, manage work"
+      },
+      {
+        "name": "contractor-engineer",
+        "description": "Contractor Engineer — execute technical work, generate reports"
+      },
+      {
+        "name": "egs-ground-ops",
+        "description": "EGS / Ground Operations — receive components, facility management"
+      },
+      {
+        "name": "admin",
+        "description": "System Administrator — reset, inject, seed simulation"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "artemis-app",
+      "name": "Artemis Mission Simulation",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8000"
+      ],
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email"
+      ],
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "realm_roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "organization",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "organization",
+            "user.attribute": "organization",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "pm",
+      "email": "pm@nasa.test",
+      "firstName": "Pat",
+      "lastName": "Morrison",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "organization": ["nasa"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "nasa-program-manager"
+      ]
+    },
+    {
+      "username": "tech",
+      "email": "tech@nasa.test",
+      "firstName": "Taylor",
+      "lastName": "Chen",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "organization": ["nasa"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "nasa-tech-authority"
+      ]
+    },
+    {
+      "username": "contracts",
+      "email": "contracts@nasa.test",
+      "firstName": "Casey",
+      "lastName": "Rodriguez",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "organization": ["nasa"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "nasa-contracts-officer"
+      ]
+    },
+    {
+      "username": "contractor-pm",
+      "email": "pm@benning.test",
+      "firstName": "Blake",
+      "lastName": "Nguyen",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "organization": ["benning"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "contractor-pm"
+      ]
+    },
+    {
+      "username": "contractor-eng",
+      "email": "eng@benning.test",
+      "firstName": "Ellis",
+      "lastName": "Park",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "organization": ["benning"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "contractor-engineer"
+      ]
+    },
+    {
+      "username": "groundops",
+      "email": "ops@nasa.test",
+      "firstName": "Jordan",
+      "lastName": "Williams",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "organization": ["nasa"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "egs-ground-ops"
+      ]
+    },
+    {
+      "username": "admin",
+      "email": "admin@artemis.test",
+      "firstName": "Admin",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "organization": ["nasa"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "admin"
+      ]
+    }
+  ]
+}

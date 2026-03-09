@@ -1,0 +1,55 @@
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="ARTEMIS_", env_file=".env", env_file_encoding="utf-8")
+
+    # Database
+    database_url: str = "postgresql+asyncpg://artemis:artemis@localhost:5432/artemis"
+
+    # Temporal
+    temporal_host: str = "localhost:7233"
+    temporal_namespace: str = "default"
+    temporal_task_queue: str = "artemis-main"
+
+    # Keycloak
+    keycloak_url: str = "http://localhost:8180"
+    keycloak_realm: str = "artemis-sim"
+    keycloak_client_id: str = "artemis-app"
+    keycloak_client_secret: str = ""
+
+    # Auth
+    auth_disabled: bool = False
+
+    # LLM
+    llm_provider: str = "openai"  # openai | anthropic | local
+    llm_model: str = "gpt-4"
+    llm_base_url: str = ""
+    llm_api_key: str = ""
+
+    # App
+    debug: bool = False
+    base_url: str = "http://localhost:8000"
+
+    @property
+    def keycloak_issuer_url(self) -> str:
+        return f"{self.keycloak_url}/realms/{self.keycloak_realm}"
+
+    @property
+    def keycloak_openid_config_url(self) -> str:
+        return f"{self.keycloak_issuer_url}/.well-known/openid-configuration"
+
+    @property
+    def keycloak_jwks_url(self) -> str:
+        return f"{self.keycloak_issuer_url}/protocol/openid-connect/certs"
+
+    @property
+    def keycloak_token_url(self) -> str:
+        return f"{self.keycloak_issuer_url}/protocol/openid-connect/token"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
