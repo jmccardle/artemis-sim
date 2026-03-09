@@ -15,6 +15,54 @@ from artemis.database import engine
 APP_DIR = Path(__file__).parent
 
 
+async def _ensure_system_workflows(client: Client, settings) -> None:
+    """Start long-lived system workflows if not already running."""
+    from datetime import datetime, timezone
+
+    from temporalio.service import RPCError
+
+    from artemis.workflows.clock import (
+        CLOCK_WORKFLOW_ID,
+        ClockWorkflowInput,
+        SimulatedClockWorkflow,
+    )
+    from artemis.workflows.facility_manager import (
+        FacilityManagerWorkflow,
+        FacilityWorkflowInput,
+    )
+
+    # Start clock workflow
+    try:
+        handle = client.get_workflow_handle(CLOCK_WORKFLOW_ID)
+        await handle.describe()  # Check if running
+    except RPCError:
+        await client.start_workflow(
+            SimulatedClockWorkflow.run,
+            ClockWorkflowInput(
+                initial_time_iso=datetime.now(timezone.utc).isoformat(),
+            ),
+            id=CLOCK_WORKFLOW_ID,
+            task_queue=settings.temporal_orchestration_queue,
+        )
+
+    # Start facility workflows (MVP: just The Garage)
+    mvp_facilities = [
+        ("the-garage", "The Garage", 1),
+    ]
+    for slug, name, capacity in mvp_facilities:
+        wf_id = f"facility-{slug}"
+        try:
+            handle = client.get_workflow_handle(wf_id)
+            await handle.describe()
+        except RPCError:
+            await client.start_workflow(
+                FacilityManagerWorkflow.run,
+                FacilityWorkflowInput(slug=slug, name=name, capacity=capacity),
+                id=wf_id,
+                task_queue=settings.temporal_orchestration_queue,
+            )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
@@ -29,6 +77,9 @@ async def lifespan(app: FastAPI):
         settings.temporal_host,
         namespace=settings.temporal_namespace,
     )
+
+    # Start system workflows (clock + facility managers)
+    await _ensure_system_workflows(app.state.temporal_client, settings)
 
     yield
 

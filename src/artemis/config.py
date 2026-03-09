@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     temporal_host: str = "localhost:7233"
     temporal_namespace: str = "default"
     temporal_task_queue: str = "artemis-main"
+    temporal_orchestration_queue: str = "artemis-orchestration"
+    temporal_llm_queue: str = "artemis-llm"
+    temporal_simulation_queue: str = "artemis-simulation"
+    temporal_notification_queue: str = "artemis-notifications"
 
     # Keycloak
     keycloak_url: str = "http://localhost:8180"
