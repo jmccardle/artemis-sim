@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from temporalio.client import WorkflowNotFoundError
+from temporalio.service import RPCError, RPCStatusCode
 
 from artemis.api.schemas import ArtifactResponse, TaskResponse
 from artemis.auth.dependencies import get_current_user
@@ -54,11 +54,13 @@ async def complete_task(
                 details=f"Completed by {user.username}",
             ),
         )
-    except WorkflowNotFoundError:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Mission workflow {wf_id} not found or not running",
-        )
+    except RPCError as e:
+        if e.status == RPCStatusCode.NOT_FOUND:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Mission workflow {wf_id} not found or not running",
+            )
+        raise
 
     # Refresh task from DB (workflow activity may have updated it)
     await db.refresh(task)
@@ -90,11 +92,13 @@ async def fail_task(
                 details=f"Failed by {user.username}",
             ),
         )
-    except WorkflowNotFoundError:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Mission workflow {wf_id} not found or not running",
-        )
+    except RPCError as e:
+        if e.status == RPCStatusCode.NOT_FOUND:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Mission workflow {wf_id} not found or not running",
+            )
+        raise
 
     # Refresh task from DB (workflow activity may have updated it)
     await db.refresh(task)
@@ -129,11 +133,13 @@ async def advance_task(
                 details=f"Advanced by {user.username}",
             ),
         )
-    except WorkflowNotFoundError:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Mission workflow {wf_id} not found or not running",
-        )
+    except RPCError as e:
+        if e.status == RPCStatusCode.NOT_FOUND:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Mission workflow {wf_id} not found or not running",
+            )
+        raise
 
     # Refresh task from DB (workflow activity may have updated it)
     await db.refresh(task)

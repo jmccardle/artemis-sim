@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from temporalio.client import WorkflowNotFoundError
+from temporalio.service import RPCError, RPCStatusCode
 
 from artemis.api.schemas import ClockAdvanceRequest, ClockResponse
 from artemis.auth.dependencies import require_role
@@ -34,8 +34,10 @@ async def get_clock(
             current_time=datetime.fromisoformat(time_iso),
             last_advance_reason=None,
         )
-    except WorkflowNotFoundError:
-        pass
+    except RPCError as e:
+        if e.status != RPCStatusCode.NOT_FOUND:
+            raise
+
 
     # Fall back to DB if workflow is not running
     result = await db.execute(select(SimulatedClock).limit(1))
@@ -59,11 +61,13 @@ async def advance_clock(
             SimulatedClockWorkflow.advance_time,
             AdvanceTimeInput(seconds=body.duration_seconds, reason=body.reason),
         )
-    except WorkflowNotFoundError:
-        raise HTTPException(
-            status_code=409,
-            detail="Clock workflow not running. Start it via admin/seed first.",
-        )
+    except RPCError as e:
+        if e.status == RPCStatusCode.NOT_FOUND:
+            raise HTTPException(
+                status_code=409,
+                detail="Clock workflow not running. Start it via admin/seed first.",
+            )
+        raise
 
     # Query the updated time from the workflow
     time_iso = await handle.query(SimulatedClockWorkflow.get_current_time)
