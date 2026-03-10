@@ -1,0 +1,14 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block head %}
+{{ super() }}
+{% if contractor and contractor.slug %}
+<link rel="stylesheet" href="/static/css/contractors/{{ contractor.slug }}.css">
+{% endif %}
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="contractor-portal">
+    {% block portal_content %}{% endblock %}
+</div>
+{% endblock %}

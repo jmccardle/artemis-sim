@@ -1,0 +1,31 @@
+{% if scorecard %}
+<div class="card">
+    <div class="card-header">
+        <h6 class="mb-0">Scorecard: {{ task.name }}</h6>
+    </div>
+    <div class="card-body">
+        <table class="table table-sm scorecard-table">
+            <thead>
+                <tr>
+                    <th>Criterion</th>
+                    <th>Score</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for criterion in scorecard.get('criteria', []) %}
+                <tr>
+                    <td>{{ criterion.name }}</td>
+                    <td>
+                        <span class="badge {% if criterion.score >= 80 %}bg-success{% elif criterion.score >= 60 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                            {{ criterion.score }}/100
+                        </span>
+                    </td>
+                    <td class="small">{{ criterion.notes | default('—') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}

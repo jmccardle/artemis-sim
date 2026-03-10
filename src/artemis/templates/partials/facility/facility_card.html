@@ -1,0 +1,29 @@
+<div class="card facility-card shadow-sm">
+    <div class="card-body">
+        <h6 class="card-title">{{ facility.name }}</h6>
+        <p class="card-text small text-muted mb-2">
+            <i class="bi bi-geo-alt"></i> {{ facility.location }}
+        </p>
+
+        <!-- Occupancy -->
+        <div class="d-flex justify-content-between small mb-1">
+            <span>Occupancy</span>
+            <span>{{ facility.current_occupancy }}/{{ facility.capacity }}</span>
+        </div>
+        <div class="progress occupancy-bar mb-2">
+            {% set pct = (facility.current_occupancy / facility.capacity * 100) if facility.capacity > 0 else 0 %}
+            <div class="progress-bar {% if pct >= 100 %}bg-danger{% elif pct >= 75 %}bg-warning{% else %}bg-success{% endif %}"
+                 style="width: {{ pct }}%"></div>
+        </div>
+
+        <!-- Capabilities -->
+        <div class="mt-2">
+            {% for cap in facility.capabilities[:3] %}
+            <span class="badge bg-light text-dark border me-1">{{ cap }}</span>
+            {% endfor %}
+            {% if facility.capabilities | length > 3 %}
+            <span class="badge bg-light text-muted border">+{{ facility.capabilities | length - 3 }}</span>
+            {% endif %}
+        </div>
+    </div>
+</div>

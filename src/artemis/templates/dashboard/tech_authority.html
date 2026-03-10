@@ -1,0 +1,27 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Technical Authority Dashboard — Artemis{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-clipboard-check"></i> Technical Authority Review</h4>
+</div>
+
+<!-- Review Queue -->
+<h5 class="mb-3"><i class="bi bi-list-check"></i> Review Queue</h5>
+{% if review_tasks %}
+<div id="review-queue">
+    {% include "partials/review/queue.html" %}
+</div>
+{% else %}
+{% with icon="clipboard-check", title="No Reviews Pending", message="All reviews are up to date." %}
+{% include "partials/shared/empty_state.html" %}
+{% endwith %}
+{% endif %}
+
+<!-- Mission Progress -->
+{% if missions %}
+<h5 class="mt-4 mb-3"><i class="bi bi-bar-chart"></i> Mission Progress</h5>
+{% include "partials/mission/progress_bars.html" %}
+{% endif %}
+{% endblock %}

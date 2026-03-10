@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="/static/css/kanban.css">
+
+<div class="kanban-board" id="kanban-board">
+    {% set statuses = [("NOT_READY", "Not Ready"), ("AVAILABLE", "Available"), ("IN_PROGRESS", "In Progress"), ("COMPLETED", "Completed")] %}
+
+    {% for status_key, status_label in statuses %}
+    {% set column_tasks = tasks | selectattr("status", "equalto", status_key) | list %}
+    <div class="kanban-column" data-status="{{ status_key }}">
+        <div class="kanban-column-header">
+            {{ status_label }}
+            <span class="badge bg-status-{{ status_key }}">{{ column_tasks | length }}</span>
+        </div>
+        <div class="kanban-cards">
+            {% for task in column_tasks %}
+            {% include "partials/kanban/card.html" %}
+            {% endfor %}
+            {% if not column_tasks %}
+            <div class="text-muted text-center small py-3">No tasks</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>

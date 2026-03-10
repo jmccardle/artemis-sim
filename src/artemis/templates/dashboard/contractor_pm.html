@@ -1,0 +1,56 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Contractor PM Dashboard — Artemis{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-briefcase"></i> Contractor Project Management</h4>
+    <span class="badge bg-secondary">{{ user.organization }}</span>
+</div>
+
+<!-- RFP Inbox -->
+<h5 class="mb-3"><i class="bi bi-inbox"></i> RFP Inbox & Proposals</h5>
+{% if pm_tasks %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Task</th>
+                <th>Phase</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in pm_tasks %}
+            <tr>
+                <td>
+                    <a href="#" onclick="openTaskModal('{{ task.id }}'); return false;"
+                       class="text-decoration-none">
+                        {{ task.name }}
+                    </a>
+                </td>
+                <td><span class="badge bg-phase-{{ task.phase }}">{{ task.phase | replace('_', ' ') }}</span></td>
+                <td><span class="badge bg-status-{{ task.status }}">{{ task.status }}</span></td>
+                <td>
+                    {% if task.status in ['AVAILABLE', 'IN_PROGRESS'] %}
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-complete"
+                                hx-post="/views/tasks/{{ task.id }}/complete"
+                                hx-swap="none">
+                            <i class="bi bi-check-lg"></i> Submit
+                        </button>
+                    </div>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+{% with icon="inbox", title="No RFPs", message="No proposals or RFPs are assigned to your role." %}
+{% include "partials/shared/empty_state.html" %}
+{% endwith %}
+{% endif %}
+{% endblock %}

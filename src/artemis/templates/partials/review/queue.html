@@ -1,0 +1,46 @@
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Task</th>
+                <th>Phase</th>
+                <th>Status</th>
+                <th>Type</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in review_tasks %}
+            <tr>
+                <td>
+                    <a href="#" onclick="openTaskModal('{{ task.id }}'); return false;"
+                       class="text-decoration-none">
+                        {{ task.name }}
+                    </a>
+                </td>
+                <td><span class="badge bg-phase-{{ task.phase }}">{{ task.phase | replace('_', ' ') }}</span></td>
+                <td><span class="badge bg-status-{{ task.status }}">{{ task.status }}</span></td>
+                <td><span class="badge bg-secondary">{{ task.task_type }}</span></td>
+                <td>
+                    {% if task.status in ['AVAILABLE', 'IN_PROGRESS'] %}
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-complete"
+                                hx-post="/views/tasks/{{ task.id }}/complete"
+                                hx-target="#review-queue"
+                                hx-swap="innerHTML">
+                            <i class="bi bi-check-lg"></i> Approve
+                        </button>
+                        <button class="btn btn-fail"
+                                hx-post="/views/tasks/{{ task.id }}/fail"
+                                hx-target="#review-queue"
+                                hx-swap="innerHTML">
+                            <i class="bi bi-x-lg"></i> Reject
+                        </button>
+                    </div>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

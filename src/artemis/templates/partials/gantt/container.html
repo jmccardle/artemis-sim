@@ -1,0 +1,20 @@
+{% if missions and mission_tasks %}
+<script type="application/json" id="gantt-data">
+[
+    {% for mission in missions %}
+    {% if mission_tasks[mission.id] %}
+    {% for task in mission_tasks[mission.id] %}
+    {
+        "id": "{{ task.id }}",
+        "name": "{{ task.name | replace('"', '\\"') }}",
+        "start": "{{ task.simulated_start.strftime('%Y-%m-%d') if task.simulated_start else task.created_at.strftime('%Y-%m-%d') }}",
+        "end": "{{ task.simulated_end.strftime('%Y-%m-%d') if task.simulated_end else task.created_at.strftime('%Y-%m-%d') }}",
+        "progress": {% if task.status == 'COMPLETED' %}100{% elif task.status == 'IN_PROGRESS' %}50{% else %}0{% endif %},
+        "custom_class": "bar-phase-{{ task.phase | lower }}"
+    }{% if not loop.last or not loop.parent.last %},{% endif %}
+    {% endfor %}
+    {% endif %}
+    {% endfor %}
+]
+</script>
+{% endif %}

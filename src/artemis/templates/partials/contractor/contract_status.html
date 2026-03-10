@@ -1,0 +1,24 @@
+{% if contracts %}
+<div class="table-responsive">
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Contract</th>
+                <th>Status</th>
+                <th>Phase</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in contracts %}
+            <tr>
+                <td>{{ task.name }}</td>
+                <td><span class="badge bg-status-{{ task.status }}">{{ task.status }}</span></td>
+                <td><span class="badge bg-phase-{{ task.phase }}">{{ task.phase | replace('_', ' ') }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">No active contracts.</p>
+{% endif %}

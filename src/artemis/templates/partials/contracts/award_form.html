@@ -1,0 +1,16 @@
+<div class="card">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-trophy"></i> Award Contract</h6>
+    </div>
+    <div class="card-body">
+        <form hx-post="/views/tasks/{{ task.id }}/complete" hx-swap="none">
+            <div class="mb-2">
+                <label class="form-label">Task</label>
+                <input type="text" class="form-control" value="{{ task.name }}" disabled>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-check-lg"></i> Award
+            </button>
+        </form>
+    </div>
+</div>

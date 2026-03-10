@@ -1,0 +1,36 @@
+{% if contractors %}
+<div class="table-responsive">
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Contractor</th>
+                <th>Reliability</th>
+                <th>Cost Factor</th>
+                <th>Speed Factor</th>
+                <th>Specialties</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in contractors %}
+            <tr>
+                <td class="fw-semibold">{{ c.name }}</td>
+                <td>
+                    <div class="progress" style="width: 80px; height: 0.5rem;">
+                        <div class="progress-bar {% if c.reliability >= 0.9 %}bg-success{% elif c.reliability >= 0.7 %}bg-warning{% else %}bg-danger{% endif %}"
+                             style="width: {{ c.reliability * 100 }}%"></div>
+                    </div>
+                    <small>{{ (c.reliability * 100) | round(0) }}%</small>
+                </td>
+                <td>{{ c.cost_factor }}x</td>
+                <td>{{ c.speed_factor }}x</td>
+                <td>
+                    {% for s in c.specialties[:2] %}
+                    <span class="badge bg-light text-dark border">{{ s }}</span>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}

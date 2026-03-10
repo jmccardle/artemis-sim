@@ -1,0 +1,21 @@
+{% if task.status in ['AVAILABLE', 'IN_PROGRESS'] %}
+<button class="btn btn-complete"
+        hx-post="/views/tasks/{{ task.id }}/complete"
+        hx-target="#kanban-board"
+        hx-swap="outerHTML">
+    <i class="bi bi-check-lg"></i> Complete
+</button>
+<button class="btn btn-fail"
+        hx-post="/views/tasks/{{ task.id }}/fail"
+        hx-target="#kanban-board"
+        hx-swap="outerHTML">
+    <i class="bi bi-x-lg"></i> Fail
+</button>
+{% elif task.status == 'NOT_READY' %}
+<button class="btn btn-primary"
+        hx-post="/views/tasks/{{ task.id }}/advance"
+        hx-target="#kanban-board"
+        hx-swap="outerHTML">
+    <i class="bi bi-skip-forward"></i> Advance
+</button>
+{% endif %}

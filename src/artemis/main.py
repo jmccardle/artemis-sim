@@ -4,13 +4,15 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
+from starlette.middleware.sessions import SessionMiddleware
 from temporalio.client import Client
 
 from artemis.api import admin, clock, contractors, facilities, missions, tasks
 from artemis.config import get_settings
 from artemis.database import engine
+from artemis.events import event_bus
+from artemis.templating import templates  # noqa: F401 — re-export for backwards compat
 
 APP_DIR = Path(__file__).parent
 
@@ -67,6 +69,7 @@ async def _ensure_system_workflows(client: Client, settings) -> None:
 async def lifespan(app: FastAPI):
     settings = get_settings()
     app.state.settings = settings
+    app.state.event_bus = event_bus
 
     # Verify database connection
     async with engine.begin() as conn:
@@ -94,6 +97,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Session middleware (signed cookies for browser auth)
+settings = get_settings()
+app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
+
 # CORS for development
 app.add_middleware(
     CORSMiddleware,
@@ -107,9 +114,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static files and templates
+# Static files
 app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
-templates = Jinja2Templates(directory=APP_DIR / "templates")
 
 # REST API routers
 app.include_router(missions.router, prefix="/api/v1/missions", tags=["missions"])
@@ -118,6 +124,11 @@ app.include_router(contractors.router, prefix="/api/v1/contractors", tags=["cont
 app.include_router(facilities.router, prefix="/api/v1/facilities", tags=["facilities"])
 app.include_router(clock.router, prefix="/api/v1/clock", tags=["clock"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
+
+# Browser view routes
+from artemis.views import register_view_routes  # noqa: E402
+
+register_view_routes(app)
 
 
 @app.get("/health")

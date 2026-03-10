@@ -1,0 +1,21 @@
+{% if artifacts %}
+<div class="list-group list-group-flush">
+    {% for artifact in artifacts %}
+    <div class="list-group-item px-0">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="badge bg-secondary">{{ artifact.artifact_type }}</span>
+                <small class="text-muted ms-2">{{ artifact.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+            </div>
+            <button class="btn btn-sm btn-outline-primary"
+                    onclick="this.nextElementSibling.classList.toggle('d-none')">
+                <i class="bi bi-eye"></i> View
+            </button>
+        </div>
+        <pre class="d-none mt-2 p-2 bg-light rounded small" style="max-height: 300px; overflow-y: auto;">{{ artifact.content | tojson(indent=2) }}</pre>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-muted small">No artifacts generated yet.</p>
+{% endif %}

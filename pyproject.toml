@@ -28,6 +28,8 @@ dependencies = [
     "anthropic>=0.39.0",
     # SSE for real-time updates
     "sse-starlette>=2.0.0",
+    # Session middleware (signed cookies)
+    "itsdangerous>=2.2.0",
 ]
 
 [project.optional-dependencies]

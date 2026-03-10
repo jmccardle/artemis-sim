@@ -1,0 +1,13 @@
+<div class="clock-widget">
+    <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-clock"></i>
+        <div>
+            <div class="small text-muted">Simulated Time</div>
+            {% if clock_time %}
+            <div class="fw-semibold">{{ clock_time.strftime('%Y-%m-%d %H:%M') }} UTC</div>
+            {% else %}
+            <div class="text-muted">Not initialized</div>
+            {% endif %}
+        </div>
+    </div>
+</div>

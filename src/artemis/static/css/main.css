@@ -1,3 +1,71 @@
-/* Artemis Mission Simulation — Base Styles (Phase 0 placeholder) */
+/* Artemis Mission Simulation — Design System */
+
+/* === Design Tokens === */
+:root {
+    /* NASA-inspired palette */
+    --artemis-navy: #0b3d91;
+    --artemis-blue: #1b6cb0;
+    --artemis-red: #fc3d21;
+    --artemis-silver: #8a8d8f;
+    --artemis-dark: #1a1a2e;
+    --artemis-bg: #f4f6f9;
+
+    /* Status colors */
+    --status-not-ready: #6c757d;
+    --status-available: #0d6efd;
+    --status-in-progress: #ffc107;
+    --status-completed: #198754;
+    --status-failed: #dc3545;
+    --status-rework: #fd7e14;
+
+    /* Phase colors */
+    --phase-procurement: #6f42c1;
+    --phase-delivery: #0dcaf0;
+    --phase-integration: #fd7e14;
+    --phase-launch-readiness: #198754;
+
+    /* Role badge colors */
+    --role-admin: #343a40;
+    --role-nasa-pm: #0b3d91;
+    --role-nasa-ta: #155724;
+    --role-nasa-co: #6f42c1;
+    --role-contractor-pm: #856404;
+    --role-contractor-eng: #0c5460;
+    --role-ground-ops: #721c24;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    background-color: var(--artemis-bg);
+}
+
+/* === Role badge backgrounds === */
+.bg-role-admin { background-color: var(--role-admin) !important; }
+.bg-role-nasa_program_manager { background-color: var(--role-nasa-pm) !important; }
+.bg-role-nasa_tech_authority { background-color: var(--role-nasa-ta) !important; }
+.bg-role-nasa_contracts_officer { background-color: var(--role-nasa-co) !important; }
+.bg-role-contractor_pm { background-color: var(--role-contractor-pm) !important; color: #000 !important; }
+.bg-role-contractor_engineer { background-color: var(--role-contractor-eng) !important; }
+.bg-role-egs_ground_ops { background-color: var(--role-ground-ops) !important; }
+
+/* === Status badge backgrounds === */
+.bg-status-NOT_READY { background-color: var(--status-not-ready) !important; }
+.bg-status-AVAILABLE { background-color: var(--status-available) !important; }
+.bg-status-IN_PROGRESS { background-color: var(--status-in-progress) !important; color: #000 !important; }
+.bg-status-COMPLETED { background-color: var(--status-completed) !important; }
+.bg-status-FAILED { background-color: var(--status-failed) !important; }
+.bg-status-REWORK { background-color: var(--status-rework) !important; }
+
+/* === Phase badge backgrounds === */
+.bg-phase-PROCUREMENT { background-color: var(--phase-procurement) !important; }
+.bg-phase-DELIVERY { background-color: var(--phase-delivery) !important; color: #000 !important; }
+.bg-phase-INTEGRATION { background-color: var(--phase-integration) !important; color: #000 !important; }
+.bg-phase-LAUNCH_READINESS { background-color: var(--phase-launch-readiness) !important; }
+
+/* === Mission status backgrounds === */
+.bg-mission-CREATED { background-color: var(--status-not-ready) !important; }
+.bg-mission-IN_PROGRESS { background-color: var(--status-in-progress) !important; color: #000 !important; }
+.bg-mission-COMPLETED { background-color: var(--status-completed) !important; }
+.bg-mission-FAILED { background-color: var(--status-failed) !important; }

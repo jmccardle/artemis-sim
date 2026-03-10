@@ -1,0 +1,114 @@
+/* Component styles — badges, modals, toasts, progress bars */
+
+/* === Task detail panel === */
+.task-detail-panel {
+    padding: 1rem;
+}
+
+.task-detail-panel .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.task-detail-panel .detail-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.task-detail-panel .detail-value {
+    font-size: 0.85rem;
+}
+
+/* === Progress bars === */
+.mission-progress {
+    margin-bottom: 1rem;
+}
+
+.mission-progress .progress {
+    height: 1.25rem;
+    border-radius: 0.5rem;
+}
+
+.mission-progress .phase-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+/* === Review scorecard === */
+.scorecard-table th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.scorecard-table td {
+    font-size: 0.85rem;
+}
+
+/* === Facility card === */
+.facility-card {
+    border-left: 4px solid var(--artemis-blue);
+}
+
+.facility-card .occupancy-bar {
+    height: 0.5rem;
+}
+
+/* === Toast customization === */
+.toast {
+    min-width: 300px;
+}
+
+/* === Empty state === */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* === Loading spinner === */
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+/* === Action buttons === */
+.btn-complete {
+    --bs-btn-bg: var(--status-completed);
+    --bs-btn-border-color: var(--status-completed);
+    --bs-btn-hover-bg: #157347;
+    --bs-btn-hover-border-color: #146c43;
+    --bs-btn-color: #fff;
+}
+
+.btn-fail {
+    --bs-btn-bg: var(--status-failed);
+    --bs-btn-border-color: var(--status-failed);
+    --bs-btn-hover-bg: #bb2d3b;
+    --bs-btn-hover-border-color: #b02a37;
+    --bs-btn-color: #fff;
+}
+
+/* === HTMX indicators === */
+.htmx-indicator {
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    opacity: 1;
+}

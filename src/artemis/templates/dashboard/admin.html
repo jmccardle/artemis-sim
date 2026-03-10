@@ -1,0 +1,99 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Admin Dashboard — Artemis{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-gear"></i> Admin Dashboard</h4>
+</div>
+
+<!-- Simulation Status -->
+<div id="admin-status">
+    {% include "partials/admin/simulation_status.html" %}
+</div>
+
+<!-- Actions Row -->
+<div class="row g-3 mb-4">
+    <!-- Create Mission -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-plus-circle"></i> Create Mission</h6>
+            </div>
+            <div class="card-body">
+                <form hx-post="/views/missions/create" hx-target="#admin-status" hx-swap="innerHTML">
+                    <div class="mb-3">
+                        <label for="mission-name" class="form-label">Mission Name</label>
+                        <input type="text" class="form-control" id="mission-name" name="name"
+                               placeholder="e.g. Artemis I" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="arch-type" class="form-label">Architecture</label>
+                        <select class="form-select" id="arch-type" name="architecture_type">
+                            <option value="estes" selected>Estes Model Rocket (MVP)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-rocket-takeoff"></i> Create Mission
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clock Advance -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-clock-history"></i> Advance Clock</h6>
+            </div>
+            <div class="card-body">
+                <form hx-post="/views/clock/advance" hx-target="#clock-display" hx-swap="innerHTML">
+                    <div class="mb-2">
+                        <label for="hours" class="form-label">Hours</label>
+                        <input type="number" class="form-control" id="hours" name="hours" value="1" min="1" max="168">
+                    </div>
+                    <div class="mb-2">
+                        <label for="reason" class="form-label">Reason</label>
+                        <input type="text" class="form-control" id="reason" name="reason" value="Manual advance">
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-sm w-100">
+                        <i class="bi bi-fast-forward"></i> Advance
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset -->
+    <div class="col-md-3">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Reset</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">Delete all missions, tasks, and artifacts. Re-seed contractors and facilities.</p>
+                <button class="btn btn-outline-danger w-100"
+                        data-bs-toggle="modal" data-bs-target="#reset-modal">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset Simulation
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mission List -->
+{% if missions %}
+<h5 class="mb-3"><i class="bi bi-collection"></i> Missions</h5>
+<div class="row g-3">
+    {% for mission in missions %}
+    <div class="col-md-6">
+        {% include "partials/mission/mission_card.html" %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Reset Confirmation Modal -->
+{% include "partials/admin/reset_confirm.html" %}
+{% endblock %}

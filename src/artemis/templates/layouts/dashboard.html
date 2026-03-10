@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="dashboard-layout" hx-ext="sse" sse-connect="/views/events">
+    <!-- Sidebar -->
+    <nav class="dashboard-sidebar">
+        <div class="sidebar-header">
+            <h5 class="mb-0">
+                <i class="bi bi-rocket-takeoff"></i>
+                Artemis
+            </h5>
+        </div>
+
+        <!-- User info -->
+        <div class="sidebar-user px-3 py-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-person-circle fs-4"></i>
+                <div>
+                    <div class="fw-semibold small">{{ user.username }}</div>
+                    <span class="badge bg-role-{{ user.roles[0] | replace('-', '_') }} small">
+                        {{ role_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <hr class="mx-3 my-2">
+
+        <!-- Navigation -->
+        <ul class="nav flex-column px-2">
+            <li class="nav-item">
+                <a class="nav-link active" href="/">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+            </li>
+            {% if user.roles[0] in ['admin', 'nasa-program-manager'] %}
+            <li class="nav-item">
+                <a class="nav-link" href="#" hx-get="/views/missions" hx-target="#main-content" hx-push-url="false">
+                    <i class="bi bi-collection"></i> Missions
+                </a>
+            </li>
+            {% endif %}
+            {% if user.roles[0] == 'admin' %}
+            <li class="nav-item">
+                <a class="nav-link" href="#" hx-get="/views/admin/status" hx-target="#main-content" hx-push-url="false">
+                    <i class="bi bi-gear"></i> Admin
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+
+        <!-- Clock display -->
+        <div class="sidebar-clock mt-auto px-3 py-2" id="clock-display"
+             sse-swap="clock-updated" hx-swap="innerHTML">
+            {% include "partials/shared/clock_display.html" %}
+        </div>
+
+        <!-- Logout -->
+        <div class="px-3 py-2">
+            <a href="/logout" class="btn btn-outline-light btn-sm w-100">
+                <i class="bi bi-box-arrow-left"></i> Logout
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="dashboard-main">
+        <div id="main-content">
+            {% block dashboard_content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- SSE event handlers for toasts -->
+    <div sse-swap="notification" hx-swap="afterbegin" hx-target="#toast-container" style="display:none;"></div>
+</div>
+{% endblock %}

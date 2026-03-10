@@ -26,6 +26,7 @@ class Settings(BaseSettings):
 
     # Auth
     auth_disabled: bool = False
+    session_secret: str = "artemis-dev-secret-change-in-production"
 
     # LLM
     llm_provider: str = "openai"  # openai | anthropic | local
@@ -52,6 +53,14 @@ class Settings(BaseSettings):
     @property
     def keycloak_token_url(self) -> str:
         return f"{self.keycloak_issuer_url}/protocol/openid-connect/token"
+
+    @property
+    def keycloak_authorize_url(self) -> str:
+        return f"{self.keycloak_issuer_url}/protocol/openid-connect/auth"
+
+    @property
+    def keycloak_logout_url(self) -> str:
+        return f"{self.keycloak_issuer_url}/protocol/openid-connect/logout"
 
 
 @lru_cache

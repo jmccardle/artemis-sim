@@ -1,16 +1,11 @@
-from datetime import datetime
-
-from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from temporalio.service import RPCError, RPCStatusCode
 
 from artemis.api.schemas import ClockAdvanceRequest, ClockResponse
 from artemis.auth.dependencies import require_role
 from artemis.auth.keycloak import UserInfo
 from artemis.database import get_db_session
-from artemis.models.clock import SimulatedClock
-from artemis.workflows.clock import AdvanceTimeInput, CLOCK_WORKFLOW_ID, SimulatedClockWorkflow
+from artemis.services import clock as clock_svc
 
 router = APIRouter()
 
@@ -25,26 +20,8 @@ async def get_clock(
     )),
     db: AsyncSession = Depends(get_db_session),
 ):
-    # Try to query the clock workflow first
-    client = request.app.state.temporal_client
-    try:
-        handle = client.get_workflow_handle(CLOCK_WORKFLOW_ID)
-        time_iso = await handle.query(SimulatedClockWorkflow.get_current_time)
-        return ClockResponse(
-            current_time=datetime.fromisoformat(time_iso),
-            last_advance_reason=None,
-        )
-    except RPCError as e:
-        if e.status != RPCStatusCode.NOT_FOUND:
-            raise
-
-
-    # Fall back to DB if workflow is not running
-    result = await db.execute(select(SimulatedClock).limit(1))
-    clock = result.scalar_one_or_none()
-    if clock is None:
-        raise HTTPException(status_code=404, detail="Simulated clock not initialized. Run admin/seed first.")
-    return clock
+    data = await clock_svc.get_clock(request.app.state.temporal_client, db)
+    return ClockResponse(current_time=data.current_time, last_advance_reason=data.last_advance_reason)
 
 
 @router.post("/advance", response_model=ClockResponse)
@@ -54,24 +31,7 @@ async def advance_clock(
     user: UserInfo = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db_session),
 ):
-    client = request.app.state.temporal_client
-    try:
-        handle = client.get_workflow_handle(CLOCK_WORKFLOW_ID)
-        await handle.signal(
-            SimulatedClockWorkflow.advance_time,
-            AdvanceTimeInput(seconds=body.duration_seconds, reason=body.reason),
-        )
-    except RPCError as e:
-        if e.status == RPCStatusCode.NOT_FOUND:
-            raise HTTPException(
-                status_code=409,
-                detail="Clock workflow not running. Start it via admin/seed first.",
-            )
-        raise
-
-    # Query the updated time from the workflow
-    time_iso = await handle.query(SimulatedClockWorkflow.get_current_time)
-    return ClockResponse(
-        current_time=datetime.fromisoformat(time_iso),
-        last_advance_reason=body.reason,
+    data = await clock_svc.advance_clock(
+        request.app.state.temporal_client, db, body.duration_seconds, body.reason
     )
+    return ClockResponse(current_time=data.current_time, last_advance_reason=data.last_advance_reason)

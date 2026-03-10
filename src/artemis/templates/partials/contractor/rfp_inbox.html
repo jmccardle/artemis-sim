@@ -1,0 +1,24 @@
+{% if rfp_tasks %}
+<div class="list-group">
+    {% for task in rfp_tasks %}
+    <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-1">{{ task.name }}</h6>
+                <span class="badge bg-status-{{ task.status }}">{{ task.status }}</span>
+                <span class="badge bg-phase-{{ task.phase }}">{{ task.phase | replace('_', ' ') }}</span>
+            </div>
+            {% if task.status == 'AVAILABLE' %}
+            <button class="btn btn-sm btn-primary"
+                    hx-post="/views/tasks/{{ task.id }}/complete"
+                    hx-swap="none">
+                <i class="bi bi-send"></i> Submit Proposal
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">No open RFPs.</p>
+{% endif %}

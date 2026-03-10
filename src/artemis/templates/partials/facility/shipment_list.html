@@ -1,0 +1,21 @@
+{% if shipments %}
+<div class="list-group">
+    {% for task in shipments %}
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+            <strong>{{ task.name }}</strong>
+            <span class="badge bg-status-{{ task.status }} ms-2">{{ task.status }}</span>
+        </div>
+        {% if task.status == 'AVAILABLE' %}
+        <button class="btn btn-sm btn-complete"
+                hx-post="/views/tasks/{{ task.id }}/complete"
+                hx-swap="none">
+            <i class="bi bi-check-lg"></i> Receive
+        </button>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-muted small">No incoming shipments.</p>
+{% endif %}

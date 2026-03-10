@@ -1,0 +1,12 @@
+<div class="row g-3">
+    {% for facility in facilities %}
+    <div class="col-md-6 col-lg-4">
+        {% include "partials/facility/facility_card.html" %}
+    </div>
+    {% endfor %}
+    {% if not facilities %}
+    {% with icon="building", title="No Facilities", message="No facilities have been configured." %}
+    {% include "partials/shared/empty_state.html" %}
+    {% endwith %}
+    {% endif %}
+</div>

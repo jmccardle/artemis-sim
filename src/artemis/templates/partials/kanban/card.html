@@ -1,0 +1,29 @@
+<div class="kanban-card" onclick="openTaskModal('{{ task.id }}')">
+    <div class="card-title">{{ task.name }}</div>
+    <div class="card-meta">
+        <span class="badge bg-phase-{{ task.phase }}">{{ task.phase | replace('_', ' ') }}</span>
+        {% if task.assigned_contractor %}
+        <span class="badge bg-secondary">{{ task.assigned_contractor }}</span>
+        {% endif %}
+    </div>
+    {% if task.status in ['AVAILABLE', 'IN_PROGRESS'] %}
+    <div class="card-actions" onclick="event.stopPropagation()">
+        {% if task.status == 'AVAILABLE' or task.status == 'IN_PROGRESS' %}
+        <button class="btn btn-sm btn-complete"
+                hx-post="/views/tasks/{{ task.id }}/complete"
+                hx-target="#kanban-board"
+                hx-swap="outerHTML"
+                hx-indicator=".htmx-indicator">
+            <i class="bi bi-check-lg"></i> Complete
+        </button>
+        <button class="btn btn-sm btn-fail"
+                hx-post="/views/tasks/{{ task.id }}/fail"
+                hx-target="#kanban-board"
+                hx-swap="outerHTML"
+                hx-indicator=".htmx-indicator">
+            <i class="bi bi-x-lg"></i> Fail
+        </button>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>

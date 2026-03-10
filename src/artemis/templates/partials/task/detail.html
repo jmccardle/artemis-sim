@@ -1,0 +1,73 @@
+<div class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-list-task"></i> {{ task.name }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="task-detail-panel">
+                    <div class="detail-row">
+                        <span class="detail-label">Status</span>
+                        <span class="badge bg-status-{{ task.status }}">{{ task.status }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Phase</span>
+                        <span class="badge bg-phase-{{ task.phase }}">{{ task.phase | replace('_', ' ') }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Type</span>
+                        <span class="detail-value">{{ task.task_type }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Assigned Role</span>
+                        <span class="detail-value">{{ task.assigned_role }}</span>
+                    </div>
+                    {% if task.assigned_contractor %}
+                    <div class="detail-row">
+                        <span class="detail-label">Contractor</span>
+                        <span class="detail-value">{{ task.assigned_contractor }}</span>
+                    </div>
+                    {% endif %}
+                    {% if task.facility %}
+                    <div class="detail-row">
+                        <span class="detail-label">Facility</span>
+                        <span class="detail-value">{{ task.facility }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="detail-row">
+                        <span class="detail-label">Duration</span>
+                        <span class="detail-value">{{ task.nominal_duration_seconds }}s ({{ (task.nominal_duration_seconds / 3600) | round(1) }}h)</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Failure Probability</span>
+                        <span class="detail-value">{{ (task.failure_probability * 100) | round(1) }}%</span>
+                    </div>
+                    {% if task.simulated_start %}
+                    <div class="detail-row">
+                        <span class="detail-label">Started</span>
+                        <span class="detail-value">{{ task.simulated_start.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                    {% endif %}
+                    {% if task.simulated_end %}
+                    <div class="detail-row">
+                        <span class="detail-label">Ended</span>
+                        <span class="detail-value">{{ task.simulated_end.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if artifacts %}
+                    <h6 class="mt-3 mb-2">Artifacts</h6>
+                    {% include "partials/task/artifact_list.html" %}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                {% include "partials/task/actions.html" %}
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

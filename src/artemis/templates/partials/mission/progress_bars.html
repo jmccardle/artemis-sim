@@ -1,0 +1,44 @@
+{% if missions %}
+{% for mission in missions %}
+<div class="mission-progress mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <h6 class="mb-0">{{ mission.name }}</h6>
+        <span class="badge bg-mission-{{ mission.status }}">{{ mission.status }}</span>
+    </div>
+    {% if mission_tasks and mission_tasks[mission.id] %}
+    {% set all_tasks = mission_tasks[mission.id] %}
+    {% set total = all_tasks | length %}
+    {% set completed = all_tasks | selectattr("status", "equalto", "COMPLETED") | list | length %}
+    {% set in_progress = all_tasks | selectattr("status", "equalto", "IN_PROGRESS") | list | length %}
+    {% set failed = all_tasks | selectattr("status", "equalto", "FAILED") | list | length %}
+    <div class="progress" style="height: 1.25rem;">
+        {% if completed > 0 %}
+        <div class="progress-bar bg-success" style="width: {{ (completed / total * 100) | round(1) }}%"
+             data-bs-toggle="tooltip" title="{{ completed }} completed">
+            {{ completed }}
+        </div>
+        {% endif %}
+        {% if in_progress > 0 %}
+        <div class="progress-bar bg-warning text-dark" style="width: {{ (in_progress / total * 100) | round(1) }}%"
+             data-bs-toggle="tooltip" title="{{ in_progress }} in progress">
+            {{ in_progress }}
+        </div>
+        {% endif %}
+        {% if failed > 0 %}
+        <div class="progress-bar bg-danger" style="width: {{ (failed / total * 100) | round(1) }}%"
+             data-bs-toggle="tooltip" title="{{ failed }} failed">
+            {{ failed }}
+        </div>
+        {% endif %}
+    </div>
+    <small class="text-muted">{{ completed }}/{{ total }} tasks completed</small>
+    {% else %}
+    <div class="text-muted small">No tasks created yet</div>
+    {% endif %}
+</div>
+{% endfor %}
+{% else %}
+{% with icon="collection", title="No Missions", message="No missions have been created yet." %}
+{% include "partials/shared/empty_state.html" %}
+{% endwith %}
+{% endif %}
