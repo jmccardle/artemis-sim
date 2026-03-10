@@ -42,7 +42,7 @@ class SimulatedClockWorkflow:
     """
 
     def __init__(self) -> None:
-        self._current_time: datetime = datetime.now(timezone.utc)
+        self._current_time: datetime | None = None
         self._advance_count: int = 0
         self._pending_advances: list[AdvanceTimeInput] = []
 
@@ -80,4 +80,6 @@ class SimulatedClockWorkflow:
     @workflow.query
     def get_current_time(self) -> str:
         """Query: returns ISO format string of current simulated time."""
+        if self._current_time is None:
+            return ""
         return self._current_time.isoformat()
