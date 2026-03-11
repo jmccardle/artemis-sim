@@ -169,7 +169,7 @@ async def create_mission_action(
 
     await event_bus.publish(Event(
         event_type="mission-updated",
-        data={"mission_id": str(mission.id), "name": mission.name, "status": mission.status.value},
+        data={"mission_id": str(mission.id), "name": mission.name, "status": mission.status if isinstance(mission.status, str) else mission.status.value},
     ))
     await event_bus.publish(Event(
         event_type="notification",
