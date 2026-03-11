@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     # App
     debug: bool = False
     base_url: str = "http://localhost:8000"
+    cors_origins: str = ""  # comma-separated additional CORS origins
 
     @property
     def keycloak_issuer_url(self) -> str:

@@ -21,6 +21,7 @@ async def _ensure_system_workflows(client: Client, settings) -> None:
     """Start long-lived system workflows if not already running."""
     from datetime import datetime, timezone
 
+    from temporalio.client import WorkflowExecutionStatus
     from temporalio.service import RPCError
 
     from artemis.workflows.clock import (
@@ -33,11 +34,17 @@ async def _ensure_system_workflows(client: Client, settings) -> None:
         FacilityWorkflowInput,
     )
 
+    async def _is_running(workflow_id: str) -> bool:
+        """Check if a workflow is actually running (not terminated/completed)."""
+        try:
+            handle = client.get_workflow_handle(workflow_id)
+            desc = await handle.describe()
+            return desc.status == WorkflowExecutionStatus.RUNNING
+        except RPCError:
+            return False
+
     # Start clock workflow
-    try:
-        handle = client.get_workflow_handle(CLOCK_WORKFLOW_ID)
-        await handle.describe()  # Check if running
-    except RPCError:
+    if not await _is_running(CLOCK_WORKFLOW_ID):
         await client.start_workflow(
             SimulatedClockWorkflow.run,
             ClockWorkflowInput(
@@ -53,10 +60,7 @@ async def _ensure_system_workflows(client: Client, settings) -> None:
     ]
     for slug, name, capacity in mvp_facilities:
         wf_id = f"facility-{slug}"
-        try:
-            handle = client.get_workflow_handle(wf_id)
-            await handle.describe()
-        except RPCError:
+        if not await _is_running(wf_id):
             await client.start_workflow(
                 FacilityManagerWorkflow.run,
                 FacilityWorkflowInput(slug=slug, name=name, capacity=capacity),
@@ -101,14 +105,16 @@ app = FastAPI(
 settings = get_settings()
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
 
-# CORS for development
+# CORS
+_cors_origins = [
+    settings.base_url,
+    settings.keycloak_url,
+]
+if settings.cors_origins:
+    _cors_origins.extend(o.strip() for o in settings.cors_origins.split(",") if o.strip())
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8000",
-        "http://localhost:8080",  # Temporal UI
-        "http://localhost:8180",  # Keycloak
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

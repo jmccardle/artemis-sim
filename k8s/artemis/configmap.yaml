@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: artemis-config
+  namespace: artemis
+data:
+  ARTEMIS_DATABASE_URL: "postgresql+asyncpg://artemis:artemis@postgres:5432/artemis"
+  ARTEMIS_TEMPORAL_HOST: "temporal-server:7233"
+  ARTEMIS_TEMPORAL_NAMESPACE: "default"
+  ARTEMIS_TEMPORAL_ORCHESTRATION_QUEUE: "artemis-orchestration"
+  ARTEMIS_TEMPORAL_LLM_QUEUE: "artemis-llm"
+  ARTEMIS_KEYCLOAK_URL: "http://keycloak.local"
+  ARTEMIS_KEYCLOAK_REALM: "artemis-sim"
+  ARTEMIS_KEYCLOAK_CLIENT_ID: "artemis-app"
+  ARTEMIS_AUTH_DISABLED: "false"
+  ARTEMIS_LLM_PROVIDER: "local"
+  ARTEMIS_LLM_MODEL: "glm-4-32b"
+  ARTEMIS_LLM_BASE_URL: "http://192.168.1.100:8100/v1"
+  ARTEMIS_BASE_URL: "http://artemis.local"
+  ARTEMIS_CORS_ORIGINS: "http://keycloak.local,http://temporal.local"
+  ARTEMIS_DEBUG: "false"

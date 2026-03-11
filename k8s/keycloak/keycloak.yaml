@@ -1,0 +1,206 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm
+  namespace: keycloak
+data:
+  realm-export.json: |
+    {
+      "realm": "artemis-sim",
+      "enabled": true,
+      "registrationAllowed": false,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "sslRequired": "none",
+      "defaultSignatureAlgorithm": "RS256",
+      "roles": {
+        "realm": [
+          {"name": "nasa-program-manager", "description": "NASA Program Manager"},
+          {"name": "nasa-tech-authority", "description": "NASA Technical Authority"},
+          {"name": "nasa-contracts-officer", "description": "NASA Contracts Officer"},
+          {"name": "contractor-pm", "description": "Contractor Project Manager"},
+          {"name": "contractor-engineer", "description": "Contractor Engineer"},
+          {"name": "egs-ground-ops", "description": "EGS / Ground Operations"},
+          {"name": "admin", "description": "System Administrator"}
+        ]
+      },
+      "clients": [
+        {
+          "clientId": "artemis-app",
+          "name": "Artemis Mission Simulation",
+          "enabled": true,
+          "publicClient": true,
+          "directAccessGrantsEnabled": true,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "serviceAccountsEnabled": false,
+          "redirectUris": [
+            "http://artemis.local/*"
+          ],
+          "webOrigins": [
+            "http://artemis.local"
+          ],
+          "defaultClientScopes": ["openid", "profile", "email"],
+          "protocolMappers": [
+            {
+              "name": "realm-roles",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-realm-role-mapper",
+              "consentRequired": false,
+              "config": {
+                "claim.name": "realm_roles",
+                "jsonType.label": "String",
+                "multivalued": "true",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            },
+            {
+              "name": "organization",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-attribute-mapper",
+              "consentRequired": false,
+              "config": {
+                "claim.name": "organization",
+                "user.attribute": "organization",
+                "jsonType.label": "String",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        }
+      ],
+      "users": [
+        {
+          "username": "pm", "email": "pm@nasa.test",
+          "firstName": "Pat", "lastName": "Morrison",
+          "enabled": true, "emailVerified": true,
+          "attributes": {"organization": ["nasa"]},
+          "credentials": [{"type": "password", "value": "password", "temporary": false}],
+          "realmRoles": ["nasa-program-manager"]
+        },
+        {
+          "username": "tech", "email": "tech@nasa.test",
+          "firstName": "Taylor", "lastName": "Chen",
+          "enabled": true, "emailVerified": true,
+          "attributes": {"organization": ["nasa"]},
+          "credentials": [{"type": "password", "value": "password", "temporary": false}],
+          "realmRoles": ["nasa-tech-authority"]
+        },
+        {
+          "username": "contracts", "email": "contracts@nasa.test",
+          "firstName": "Casey", "lastName": "Rodriguez",
+          "enabled": true, "emailVerified": true,
+          "attributes": {"organization": ["nasa"]},
+          "credentials": [{"type": "password", "value": "password", "temporary": false}],
+          "realmRoles": ["nasa-contracts-officer"]
+        },
+        {
+          "username": "contractor-pm", "email": "pm@benning.test",
+          "firstName": "Blake", "lastName": "Nguyen",
+          "enabled": true, "emailVerified": true,
+          "attributes": {"organization": ["benning"]},
+          "credentials": [{"type": "password", "value": "password", "temporary": false}],
+          "realmRoles": ["contractor-pm"]
+        },
+        {
+          "username": "contractor-eng", "email": "eng@benning.test",
+          "firstName": "Ellis", "lastName": "Park",
+          "enabled": true, "emailVerified": true,
+          "attributes": {"organization": ["benning"]},
+          "credentials": [{"type": "password", "value": "password", "temporary": false}],
+          "realmRoles": ["contractor-engineer"]
+        },
+        {
+          "username": "groundops", "email": "ops@nasa.test",
+          "firstName": "Jordan", "lastName": "Williams",
+          "enabled": true, "emailVerified": true,
+          "attributes": {"organization": ["nasa"]},
+          "credentials": [{"type": "password", "value": "password", "temporary": false}],
+          "realmRoles": ["egs-ground-ops"]
+        },
+        {
+          "username": "admin", "email": "admin@artemis.test",
+          "firstName": "Admin", "lastName": "User",
+          "enabled": true, "emailVerified": true,
+          "attributes": {"organization": ["nasa"]},
+          "credentials": [{"type": "password", "value": "password", "temporary": false}],
+          "realmRoles": ["admin"]
+        }
+      ]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.0
+          args:
+            - start-dev
+            - --import-realm
+            - --hostname=keycloak.local
+            - --hostname-strict=false
+            - --http-enabled=true
+          env:
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL
+              value: jdbc:postgresql://postgres:5432/keycloak
+            - name: KC_DB_USERNAME
+              value: keycloak
+            - name: KC_DB_PASSWORD
+              value: keycloak
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: KEYCLOAK_ADMIN
+              value: admin
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: admin
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: realm
+              mountPath: /opt/keycloak/data/import
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 250m
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: realm
+          configMap:
+            name: keycloak-realm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - port: 80
+      targetPort: 8080
