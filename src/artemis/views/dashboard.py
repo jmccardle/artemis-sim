@@ -10,6 +10,7 @@ from artemis.services import clock as clock_svc
 from artemis.services import contractors as contractor_svc
 from artemis.services import facilities as facility_svc
 from artemis.services import missions as mission_svc
+from artemis.services import tasks as task_svc
 from artemis.templating import templates
 from artemis.views.helpers import ROLE_DISPLAY_NAMES, get_session_user
 
@@ -82,6 +83,22 @@ async def dashboard(
             )
             review_tasks.extend(tasks)
         context["review_tasks"] = review_tasks
+        # Load artifacts (scorecards) for review tasks
+        import json as _json
+        task_artifacts: dict[str, dict] = {}
+        for t in review_tasks:
+            artifacts = await task_svc.get_task_artifacts(db, t.id)
+            for a in artifacts:
+                if a.artifact_type == "SCORECARD" and a.content:
+                    raw = a.content.get("scorecard", "")
+                    if isinstance(raw, str):
+                        try:
+                            task_artifacts[str(t.id)] = _json.loads(raw)
+                        except (ValueError, TypeError):
+                            pass
+                    elif isinstance(raw, dict):
+                        task_artifacts[str(t.id)] = raw
+        context["task_scorecards"] = task_artifacts
 
     elif role == "nasa-contracts-officer":
         missions = await mission_svc.list_missions(db)
