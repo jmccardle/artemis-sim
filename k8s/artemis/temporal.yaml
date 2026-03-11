@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: temporal-postgres-pvc
+  namespace: artemis
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-postgres
+  namespace: artemis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: temporal-postgres
+  template:
+    metadata:
+      labels:
+        app: temporal-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          env:
+            - name: POSTGRES_DB
+              value: temporal
+            - name: POSTGRES_USER
+              value: temporal
+            - name: POSTGRES_PASSWORD
+              value: temporal
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "temporal"]
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: temporal-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-postgres
+  namespace: artemis
+spec:
+  selector:
+    app: temporal-postgres
+  ports:
+    - port: 5432
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-dynamicconfig
+  namespace: artemis
+data:
+  development-sql.yaml: |
+    system.forceSearchAttributesCacheRefreshOnRead:
+      - value: true
+        constraints: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal
+  namespace: artemis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: temporal
+  template:
+    metadata:
+      labels:
+        app: temporal
+    spec:
+      containers:
+        - name: temporal
+          image: temporalio/auto-setup:latest
+          env:
+            - name: DB
+              value: postgres12
+            - name: DB_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: temporal
+            - name: POSTGRES_PWD
+              value: temporal
+            - name: POSTGRES_SEEDS
+              value: temporal-postgres
+            - name: DYNAMIC_CONFIG_FILE_PATH
+              value: /etc/temporal/config/dynamicconfig/development-sql.yaml
+          ports:
+            - containerPort: 7233
+          volumeMounts:
+            - name: dynamicconfig
+              mountPath: /etc/temporal/config/dynamicconfig
+          readinessProbe:
+            tcpSocket:
+              port: 7233
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+        - name: dynamicconfig
+          configMap:
+            name: temporal-dynamicconfig
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-server
+  namespace: artemis
+spec:
+  selector:
+    app: temporal
+  ports:
+    - port: 7233
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-ui
+  namespace: artemis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: temporal-ui
+  template:
+    metadata:
+      labels:
+        app: temporal-ui
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: temporal-ui
+          image: temporalio/ui:latest
+          env:
+            - name: TEMPORAL_ADDRESS
+              value: temporal-server:7233
+            - name: TEMPORAL_CORS_ORIGINS
+              value: http://artemis.local
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-ui
+  namespace: artemis
+spec:
+  selector:
+    app: temporal-ui
+  ports:
+    - port: 80
+      targetPort: 8080

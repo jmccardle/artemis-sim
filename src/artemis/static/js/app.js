@@ -7,14 +7,17 @@ document.body.addEventListener('htmx:configRequest', function(evt) {
 
 // Re-initialize Bootstrap components after HTMX swaps
 document.body.addEventListener('htmx:afterSwap', function(evt) {
+    var target = evt.detail && evt.detail.target;
+    if (!target) return;
+
     // Initialize tooltips
-    var tooltips = evt.detail.target.querySelectorAll('[data-bs-toggle="tooltip"]');
+    var tooltips = target.querySelectorAll('[data-bs-toggle="tooltip"]');
     tooltips.forEach(function(el) {
         new bootstrap.Tooltip(el);
     });
 
     // Initialize popovers
-    var popovers = evt.detail.target.querySelectorAll('[data-bs-toggle="popover"]');
+    var popovers = target.querySelectorAll('[data-bs-toggle="popover"]');
     popovers.forEach(function(el) {
         new bootstrap.Popover(el);
     });

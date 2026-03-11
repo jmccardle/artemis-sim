@@ -6,6 +6,12 @@ from dataclasses import dataclass, field
 
 from temporalio import activity
 
+from artemis.workflows.data_types import (
+    ContractorInfo,
+    GetContractorsBySpecialtyInput,
+    SaveArtifactInput,
+)
+
 
 @dataclass
 class CreateMissionTasksInput:
@@ -156,4 +162,52 @@ async def get_tasks_by_phase(input: GetTasksByPhaseInput) -> list[TaskInfoResult
                 prerequisites=task.prerequisites if isinstance(task.prerequisites, list) else [],
             )
             for task in tasks
+        ]
+
+
+@activity.defn
+async def save_artifact(input: SaveArtifactInput) -> str:
+    """Save an LLM-generated artifact to the database. Returns artifact ID."""
+    import uuid as uuid_mod
+
+    from artemis.database import async_session_factory
+    from artemis.models.artifact import TaskArtifact
+
+    artifact = TaskArtifact(
+        task_id=uuid_mod.UUID(input.task_id),
+        artifact_type=input.artifact_type,
+        content=input.content,
+    )
+
+    async with async_session_factory() as session:
+        session.add(artifact)
+        await session.commit()
+        return str(artifact.id)
+
+
+@activity.defn
+async def get_contractors_by_specialty(
+    input: GetContractorsBySpecialtyInput,
+) -> list[ContractorInfo]:
+    """Get contractors whose specialties include the given specialty."""
+    from sqlalchemy import select
+
+    from artemis.database import async_session_factory
+    from artemis.models.contractor import Contractor
+
+    async with async_session_factory() as session:
+        result = await session.execute(select(Contractor))
+        all_contractors = result.scalars().all()
+
+        return [
+            ContractorInfo(
+                slug=c.slug,
+                name=c.name,
+                profile=c.llm_profile,
+                reliability=c.reliability,
+                cost_factor=c.cost_factor,
+                specialties=c.specialties if isinstance(c.specialties, list) else [],
+            )
+            for c in all_contractors
+            if isinstance(c.specialties, list) and input.specialty in c.specialties
         ]

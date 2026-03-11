@@ -1,31 +1,82 @@
 {% if scorecard %}
-<div class="card">
-    <div class="card-header">
-        <h6 class="mb-0">Scorecard: {{ task.name }}</h6>
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-clipboard-check"></i> Scorecard: {{ task.name }}</h6>
+        {% if scorecard.overall_recommendation %}
+        <span class="badge {% if scorecard.overall_recommendation == 'STRONG_ACCEPT' %}bg-success{% elif scorecard.overall_recommendation == 'ACCEPT' %}bg-primary{% elif scorecard.overall_recommendation == 'CONDITIONAL' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+            {{ scorecard.overall_recommendation | replace('_', ' ') }}
+        </span>
+        {% endif %}
     </div>
     <div class="card-body">
+        {% if scorecard.contractor_name %}
+        <p class="small text-muted mb-2">Contractor: <strong>{{ scorecard.contractor_name }}</strong></p>
+        {% endif %}
+
+        {% if scorecard.weighted_score is defined %}
+        <p class="mb-2">Weighted Score: <strong>{{ "%.1f" | format(scorecard.weighted_score) }}</strong> / 5.0</p>
+        {% endif %}
+
+        <!-- Criteria Table -->
         <table class="table table-sm scorecard-table">
             <thead>
                 <tr>
                     <th>Criterion</th>
+                    <th>Weight</th>
                     <th>Score</th>
-                    <th>Notes</th>
+                    <th>Justification</th>
                 </tr>
             </thead>
             <tbody>
                 {% for criterion in scorecard.get('criteria', []) %}
                 <tr>
                     <td>{{ criterion.name }}</td>
-                    <td>
-                        <span class="badge {% if criterion.score >= 80 %}bg-success{% elif criterion.score >= 60 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
-                            {{ criterion.score }}/100
+                    <td class="text-center">{{ criterion.weight }}%</td>
+                    <td class="text-center">
+                        <span class="badge {% if criterion.score >= 4 %}bg-success{% elif criterion.score >= 3 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                            {{ criterion.score }}/5
                         </span>
                     </td>
-                    <td class="small">{{ criterion.notes | default('—') }}</td>
+                    <td class="small">
+                        {{ criterion.justification | default('—') }}
+                        {% if criterion.citation %}
+                        <details class="mt-1">
+                            <summary class="text-muted" style="cursor: pointer;">Citation</summary>
+                            <blockquote class="small fst-italic mt-1 ms-2 ps-2 border-start">{{ criterion.citation }}</blockquote>
+                        </details>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        <!-- NPR Compliance -->
+        {% if scorecard.get('npr_compliance') %}
+        <h6 class="mt-3 mb-2"><i class="bi bi-shield-check"></i> NPR Compliance</h6>
+        <div class="list-group list-group-flush">
+            {% for item in scorecard.npr_compliance %}
+            <div class="list-group-item px-0 py-2">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <strong class="small">{{ item.npr_section }}</strong>
+                    </div>
+                    <span class="badge {% if item.status == 'COMPLIANT' %}bg-success{% elif item.status == 'NONCOMPLIANT' %}bg-danger{% else %}bg-secondary{% endif %}">
+                        {{ item.status | replace('_', ' ') }}
+                    </span>
+                </div>
+                <p class="small text-muted mb-0 mt-1">{{ item.evidence | default('—') }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Recommendation Rationale -->
+        {% if scorecard.recommendation_rationale %}
+        <div class="alert alert-light mt-3 mb-0 small">
+            <strong>Rationale:</strong> {{ scorecard.recommendation_rationale }}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endif %}

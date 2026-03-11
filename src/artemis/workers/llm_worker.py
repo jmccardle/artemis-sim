@@ -11,6 +11,7 @@ from artemis.activities.llm import (
     evaluate_proposal,
     generate_proposal,
     generate_rfp,
+    generate_rubric,
     generate_test_report,
 )
 from artemis.config import get_settings
@@ -28,6 +29,7 @@ async def run_worker() -> None:
         task_queue=settings.temporal_llm_queue,
         activities=[
             generate_rfp,
+            generate_rubric,
             generate_proposal,
             evaluate_proposal,
             generate_test_report,

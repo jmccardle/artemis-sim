@@ -1,0 +1,17 @@
+__pycache__
+*.pyc
+*.pyo
+.git
+.env
+.venv
+venv
+*.egg-info
+dist
+build
+docker
+k8s
+scripts
+tests
+docs
+*.md
+!alembic

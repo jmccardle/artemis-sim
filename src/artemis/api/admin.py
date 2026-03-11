@@ -20,13 +20,34 @@ router = APIRouter()
 @router.post("/reset", response_model=ResetResponse)
 async def reset_simulation(
     body: ResetRequest,
+    request: Request,
     user: UserInfo = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db_session),
 ):
     if not body.confirm:
         raise HTTPException(status_code=400, detail="Must confirm reset with confirm=true")
 
+    # Terminate running system workflows before DB reset
+    from artemis.main import _ensure_system_workflows
+    from artemis.workflows.data_types import CLOCK_WORKFLOW_ID, facility_workflow_id
+    from temporalio.client import WorkflowExecutionStatus
+    from temporalio.service import RPCError
+
+    client = request.app.state.temporal_client
+    for wf_id in [CLOCK_WORKFLOW_ID, facility_workflow_id("the-garage")]:
+        try:
+            handle = client.get_workflow_handle(wf_id)
+            desc = await handle.describe()
+            if desc.status == WorkflowExecutionStatus.RUNNING:
+                await handle.terminate(reason="Simulation reset")
+        except RPCError:
+            pass
+
     result = await admin_svc.reset_simulation(db, user.username, body.reason)
+
+    # Restart system workflows with fresh state
+    await _ensure_system_workflows(client, request.app.state.settings)
+
     return ResetResponse(status=result.status, timestamp=result.timestamp)
 
 

@@ -1,0 +1,6 @@
+NPR 7120.5F §4.2 — Key Decision Points (simplified):
+
+Each project shall conduct milestone reviews at Key Decision Points (KDP-A through
+KDP-F). Progression past each KDP requires: (1) documented assessment of technical
+maturity, (2) independent cost estimate validation, (3) risk disposition for all
+open risks rated 3x3 or higher, (4) approval by the Decision Authority.

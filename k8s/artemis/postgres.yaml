@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: artemis-postgres-pvc
+  namespace: artemis
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: artemis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: artemis-postgres
+  template:
+    metadata:
+      labels:
+        app: artemis-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          env:
+            - name: POSTGRES_DB
+              value: artemis
+            - name: POSTGRES_USER
+              value: artemis
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: artemis-secrets
+                  key: db-password
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "artemis"]
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: artemis-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: artemis
+spec:
+  selector:
+    app: artemis-postgres
+  ports:
+    - port: 5432

@@ -1,0 +1,40 @@
+SYSTEM:
+You are a NASA technical evaluation specialist. Generate a structured evaluation rubric for scoring contractor proposals against an RFP.
+
+USER:
+Given the following RFP, generate an evaluation rubric with weighted scoring criteria.
+
+RFP:
+{{ rfp_text }}
+
+Component Category: {{ component_type }}
+
+Applicable NPR Sections:
+{{ npr_context }}
+
+Generate a JSON evaluation rubric with this exact structure:
+{
+  "criteria": [
+    {
+      "name": "criterion name",
+      "weight": <integer 1-100, all weights must sum to 100>,
+      "description": "what this criterion evaluates",
+      "scoring_guide": {
+        "5": "description of a 5/5 score",
+        "3": "description of a 3/5 score",
+        "1": "description of a 1/5 score"
+      }
+    }
+  ],
+  "npr_requirements": [
+    {
+      "npr_section": "e.g. NPR 7120.5F §4.2",
+      "requirement_summary": "brief summary of what must be demonstrated",
+      "evidence_needed": "what the proposal must contain to show compliance"
+    }
+  ]
+}
+
+Include 4-6 criteria covering: technical approach, cost reasonableness, schedule feasibility, risk management, and relevant NPR compliance areas.
+
+Output ONLY valid JSON. No markdown fences, no commentary.

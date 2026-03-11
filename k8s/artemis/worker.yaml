@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: artemis-worker
+  namespace: artemis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: artemis-worker
+  template:
+    metadata:
+      labels:
+        app: artemis-worker
+    spec:
+      containers:
+        - name: worker
+          image: artemis-sim:latest
+          imagePullPolicy: Never
+          command: ["python", "-m", "artemis.workers.main"]
+          envFrom:
+            - configMapRef:
+                name: artemis-config
+          env:
+            - name: ARTEMIS_SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: artemis-secrets
+                  key: session-secret
+            - name: ARTEMIS_LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: artemis-secrets
+                  key: llm-api-key
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: artemis-llm-worker
+  namespace: artemis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: artemis-llm-worker
+  template:
+    metadata:
+      labels:
+        app: artemis-llm-worker
+    spec:
+      containers:
+        - name: llm-worker
+          image: artemis-sim:latest
+          imagePullPolicy: Never
+          command: ["python", "-m", "artemis.workers.llm_worker"]
+          envFrom:
+            - configMapRef:
+                name: artemis-config
+          env:
+            - name: ARTEMIS_SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: artemis-secrets
+                  key: session-secret
+            - name: ARTEMIS_LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: artemis-secrets
+                  key: llm-api-key
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi

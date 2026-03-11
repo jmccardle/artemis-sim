@@ -22,8 +22,20 @@ from artemis.workflows.data_types import (
     ORCHESTRATION_QUEUE,
     MissionPhase,
     MissionState,
+    TaskCompletionInput,
     mission_workflow_id,
+    procurement_workflow_id,
 )
+from artemis.workflows.procurement import ComponentBid, ProcurementInput, ProcurementWorkflow
+
+# Component name→type map for known architectures (workflow-safe, no DB)
+ESTES_COMPONENTS = [
+    ComponentBid("B-class solid motor", "propulsion"),
+    ComponentBid("Plastic parachute", "recovery-systems"),
+    ComponentBid("Rocket body tube", "structures"),
+    ComponentBid("Fin set (x3)", "structures"),
+    ComponentBid("Bottle of glue", "materials"),
+]
 
 
 @workflow.defn
@@ -78,8 +90,22 @@ class MissionWorkflow:
             self._phase = phase
             self._phase_complete = False
 
-            # Wait for phase completion signal
-            await workflow.wait_condition(lambda: self._phase_complete)
+            if phase == MissionPhase.PROCUREMENT:
+                # Launch ProcurementWorkflow as child
+                components = ESTES_COMPONENTS if architecture_name == "estes" else []
+                await workflow.execute_child_workflow(
+                    ProcurementWorkflow.run,
+                    ProcurementInput(
+                        mission_id=mission_id,
+                        components=components,
+                    ),
+                    id=procurement_workflow_id(mission_id),
+                    task_queue=ORCHESTRATION_QUEUE,
+                )
+                self._phase_complete = True
+            else:
+                # Other phases: wait for manual signal
+                await workflow.wait_condition(lambda: self._phase_complete)
 
             # Update progress
             phase_idx = phases.index(phase)

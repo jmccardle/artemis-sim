@@ -1,0 +1,92 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: artemis-migrate
+  namespace: artemis
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: artemis-sim:latest
+          imagePullPolicy: Never
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - configMapRef:
+                name: artemis-config
+          env:
+            - name: ARTEMIS_SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: artemis-secrets
+                  key: session-secret
+            - name: ARTEMIS_LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: artemis-secrets
+                  key: llm-api-key
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: artemis-app
+  namespace: artemis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: artemis-app
+  template:
+    metadata:
+      labels:
+        app: artemis-app
+    spec:
+      hostAliases:
+        - ip: "192.168.1.100"
+          hostnames: ["keycloak.local"]
+      containers:
+        - name: app
+          image: artemis-sim:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: artemis-config
+          env:
+            - name: ARTEMIS_SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: artemis-secrets
+                  key: session-secret
+            - name: ARTEMIS_LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: artemis-secrets
+                  key: llm-api-key
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: artemis-app
+  namespace: artemis
+spec:
+  selector:
+    app: artemis-app
+  ports:
+    - port: 80
+      targetPort: 8000

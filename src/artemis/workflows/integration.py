@@ -15,6 +15,7 @@ with workflow.unsafe.imports_passed_through():
         GetTasksByPhaseInput,
         UpdateTaskStatusInput,
         get_tasks_by_phase,
+        save_artifact,
         update_task_status,
     )
     from artemis.activities.simulation import (
@@ -22,6 +23,7 @@ with workflow.unsafe.imports_passed_through():
         RunInspectionResult,
         run_inspection,
     )
+    from artemis.activities.llm import generate_test_report
 
 from artemis.workflows.clock import AdvanceTimeInput, CLOCK_WORKFLOW_ID
 from artemis.workflows.facility_manager import (
@@ -34,7 +36,11 @@ from artemis.workflows.facility_manager import (
 )
 from artemis.workflows.data_types import (
     ORCHESTRATION_QUEUE,
+    LLM_QUEUE,
+    GenerateTestReportInput,
     IntegrationStepSpec,
+    LLMResult,
+    SaveArtifactInput,
     facility_workflow_id,
     integration_workflow_id,
 )
@@ -175,6 +181,32 @@ class IntegrationWorkflow:
                             task_id=t.task_id,
                             task_name=t.name,
                             failure_probability=t.failure_probability,
+                        ),
+                        start_to_close_timeout=timedelta(seconds=10),
+                    )
+
+                    # Generate LLM test report for the inspection
+                    report_result: LLMResult = await workflow.execute_activity(
+                        generate_test_report,
+                        GenerateTestReportInput(
+                            test_name=t.name,
+                            passed=result.passed,
+                            component_name=step.name,
+                            details=result.details,
+                            component_type="structures",
+                        ),
+                        start_to_close_timeout=timedelta(seconds=600),
+                        task_queue=LLM_QUEUE,
+                    )
+
+                    # Save test report artifact
+                    report_artifact_type = "TEST_REPORT" if result.passed else "FAILURE_REPORT"
+                    await workflow.execute_activity(
+                        save_artifact,
+                        SaveArtifactInput(
+                            task_id=t.task_id,
+                            artifact_type=report_artifact_type,
+                            content={"text": report_result.content},
                         ),
                         start_to_close_timeout=timedelta(seconds=10),
                     )

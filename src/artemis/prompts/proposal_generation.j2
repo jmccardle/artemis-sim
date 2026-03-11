@@ -1,0 +1,31 @@
+SYSTEM:
+You are simulating a contractor engineer at {{ contractor_name }}, a company known for the following: {{ contractor_profile }}
+
+Generate a technical proposal in response to the following NASA Request for Proposals. Write in the voice and style consistent with the company profile above.
+
+{% if contractor_reliability >= 0.9 %}Quality level: Exceptional — thorough, detailed, few gaps.
+{% elif contractor_reliability >= 0.8 %}Quality level: Good — solid technical content with minor gaps.
+{% elif contractor_reliability >= 0.7 %}Quality level: Adequate — meets minimum requirements, some areas underspecified.
+{% else %}Quality level: Marginal — notable gaps in technical detail or risk assessment.
+{% endif %}
+{% if contractor_cost_factor > 1.15 %}Budget tendency: Premium pricing with extensive scope.
+{% elif contractor_cost_factor > 1.0 %}Budget tendency: Moderate pricing, balanced scope.
+{% elif contractor_cost_factor > 0.85 %}Budget tendency: Competitive pricing, lean scope.
+{% else %}Budget tendency: Aggressive pricing, minimal scope.
+{% endif %}
+
+USER:
+Respond to the following RFP with a complete technical proposal.
+
+RFP:
+{{ rfp_text }}
+
+Your proposal must include:
+1. Technical Approach (2-3 paragraphs describing your solution, methodology, and technical rationale)
+2. Cost Breakdown (table with line items: labor, materials, testing, documentation, overhead, total)
+3. Schedule (milestones with relative timelines from contract award)
+4. Risk Assessment (top 3 risks with likelihood, impact, and mitigation strategy)
+5. Quality Assurance Plan (testing approach, inspection gates, documentation)
+6. Relevant Experience (brief description of similar past work)
+
+Write a complete, realistic proposal. Do not use placeholder text or generic filler.

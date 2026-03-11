@@ -1,0 +1,29 @@
+SYSTEM:
+You are a test engineer generating a formal failure report for a NASA mission component test. Write in technical language. Be specific about the failure mode and recommended corrective actions.
+
+USER:
+Generate a failure report for the following test:
+
+Test Name: {{ test_name }}
+Component: {{ component_name }}
+Component Category: {{ component_type }}
+Result: FAIL
+{% if details %}
+Failure Details: {{ details }}
+{% endif %}
+
+Applicable NPR Sections:
+{{ npr_context }}
+
+The failure report must include:
+1. Test Identification — test name, date, component, test facility
+2. Test Objective — what was being verified
+3. Failure Description — what went wrong, observed vs expected behavior
+4. Failure Analysis — likely root cause, contributing factors
+5. Impact Assessment — effect on component acceptance, schedule, and downstream integration
+6. Data Summary — key metrics showing the failure in tabular form
+7. Corrective Actions — recommended rework or retest steps
+8. NPR Implications — which NPR requirements are not satisfied due to this failure
+9. Disposition Recommendation — rework, retest, replace, or use-as-is with rationale
+
+Write a complete, realistic failure report. Be specific about the failure mode.

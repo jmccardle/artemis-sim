@@ -1,126 +1,191 @@
 """LLM activities — generate text via LLM providers.
 
-Phase 1: Stub implementations returning placeholder content.
-Phase 3: Real LLM provider integration.
+Each activity renders a Jinja2 prompt template, calls the configured LLM provider,
+and returns an LLMResult. Artifacts are saved separately by the orchestration layer.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+import re
 
 from temporalio import activity
 
-
-@dataclass
-class GenerateRFPInput:
-    mission_id: str
-    component_name: str
-    component_type: str
-
-
-@dataclass
-class GenerateProposalInput:
-    rfp_text: str
-    contractor_slug: str
-    contractor_name: str
-    contractor_profile: str
-    contractor_reliability: float
-    contractor_cost_factor: float
+from artemis.config import get_settings
+from artemis.llm.base import get_llm_provider
+from artemis.prompts.loader import load_npr_context, render_prompt
+from artemis.workflows.data_types import (
+    EvaluateProposalInput,
+    GenerateProposalInput,
+    GenerateRFPInput,
+    GenerateRubricInput,
+    GenerateTestReportInput,
+    LLMResult,
+)
 
 
-@dataclass
-class EvaluateProposalInput:
-    rfp_text: str
-    proposal_text: str
-    contractor_name: str
+def _extract_json(text: str) -> str:
+    """Extract JSON from LLM output that may be wrapped in markdown fences.
+
+    Handles patterns like:
+        ```json\n{...}\n```
+        ```\n{...}\n```
+        Some preamble\n{...}
+    """
+    # Try markdown fenced block first
+    match = re.search(r"```(?:json)?\s*\n?([\s\S]*?)\n?```", text)
+    if match:
+        return match.group(1).strip()
+
+    # Try to find raw JSON object or array
+    for start_char, end_char in [("{", "}"), ("[", "]")]:
+        start = text.find(start_char)
+        if start != -1:
+            end = text.rfind(end_char)
+            if end > start:
+                return text[start : end + 1]
+
+    # Return as-is — let json.loads() produce the error
+    return text.strip()
 
 
-@dataclass
-class GenerateTestReportInput:
-    test_name: str
-    passed: bool
-    component_name: str
-    details: str = ""
+def _split_system_user(rendered: str) -> tuple[str, str]:
+    """Split a rendered prompt into system and user sections.
 
+    Templates use 'SYSTEM:' and 'USER:' markers.
+    """
+    if "USER:" not in rendered:
+        return "", rendered
 
-@dataclass
-class LLMActivityResult:
-    content: str
-    artifact_type: str = ""
+    parts = rendered.split("USER:", 1)
+    system = parts[0]
+    user = parts[1].strip()
+
+    # Remove SYSTEM: prefix if present
+    if system.startswith("SYSTEM:"):
+        system = system[len("SYSTEM:"):].strip()
+    else:
+        system = system.strip()
+
+    return system, user
 
 
 @activity.defn
-async def generate_rfp(input: GenerateRFPInput) -> LLMActivityResult:
-    """Generate an RFP document for a component.
+async def generate_rfp(input: GenerateRFPInput) -> LLMResult:
+    """Generate an RFP document for a component."""
+    npr_context = load_npr_context(input.component_type)
 
-    Phase 1 stub: returns template text.
-    """
-    content = (
-        f"REQUEST FOR PROPOSALS\n"
-        f"Mission Component: {input.component_name}\n"
-        f"Category: {input.component_type}\n\n"
-        f"The National Aeronautics and Space Administration (NASA) seeks proposals "
-        f"for the procurement of {input.component_name} for mission {input.mission_id}.\n\n"
-        f"Requirements:\n"
-        f"- Component must meet all applicable NASA safety standards\n"
-        f"- Delivery within specified timeline\n"
-        f"- Full documentation and test reports required\n"
-        f"- Quality assurance plan required\n"
+    rendered = render_prompt(
+        "rfp_generation.j2",
+        mission_id=input.mission_id,
+        component_name=input.component_name,
+        component_type=input.component_type,
+        eligible_contractors=[],
+        npr_context=npr_context,
     )
-    return LLMActivityResult(content=content, artifact_type="RFP")
+
+    system, user = _split_system_user(rendered)
+    provider = get_llm_provider(get_settings())
+    content = await provider.complete(prompt=user, system=system, temperature=0.7)
+
+    return LLMResult(content=content, artifact_type="RFP")
 
 
 @activity.defn
-async def generate_proposal(input: GenerateProposalInput) -> LLMActivityResult:
-    """Generate a contractor proposal in response to an RFP.
+async def generate_rubric(input: GenerateRubricInput) -> LLMResult:
+    """Generate an evaluation rubric from an RFP."""
+    npr_context = load_npr_context(input.component_type)
 
-    Phase 1 stub: returns template proposal.
-    """
-    content = (
-        f"TECHNICAL PROPOSAL\n"
-        f"Contractor: {input.contractor_name} ({input.contractor_slug})\n\n"
-        f"Technical Approach:\n"
-        f"We propose to deliver the requested component using our proven "
-        f"manufacturing processes with a reliability factor of {input.contractor_reliability:.0%}.\n\n"
-        f"Cost Estimate: Baseline \u00d7 {input.contractor_cost_factor:.2f}\n\n"
-        f"Schedule: Standard delivery timeline\n\n"
-        f"Risk Assessment:\n"
-        f"- Low risk: Proven technology and processes\n"
-        f"- Mitigation: Redundant quality checks\n"
+    rendered = render_prompt(
+        "rubric_generation.j2",
+        rfp_text=input.rfp_text,
+        component_type=input.component_type,
+        npr_context=npr_context,
     )
-    return LLMActivityResult(content=content, artifact_type="PROPOSAL")
+
+    system, user = _split_system_user(rendered)
+    provider = get_llm_provider(get_settings())
+    raw = await provider.complete(prompt=user, system=system, temperature=0.3)
+
+    # Extract JSON from potential markdown fences, then validate
+    content = _extract_json(raw)
+    json.loads(content)
+
+    return LLMResult(
+        content=content,
+        artifact_type="RUBRIC",
+        metadata={"format": "json"},
+    )
 
 
 @activity.defn
-async def evaluate_proposal(input: EvaluateProposalInput) -> LLMActivityResult:
-    """Evaluate a contractor proposal against an RFP.
-
-    Phase 1 stub: returns template evaluation.
-    """
-    content = (
-        f"PROPOSAL EVALUATION SCORECARD\n"
-        f"Contractor: {input.contractor_name}\n\n"
-        f"Technical Approach: 4/5 \u2014 Meets requirements\n"
-        f"Cost Reasonableness: 4/5 \u2014 Within acceptable range\n"
-        f"Schedule Feasibility: 4/5 \u2014 Achievable timeline\n"
-        f"Risk Management: 3/5 \u2014 Adequate mitigation\n\n"
-        f"Overall: ACCEPT\n"
-        f"Recommendation: Proceed with contract award.\n"
+async def generate_proposal(input: GenerateProposalInput) -> LLMResult:
+    """Generate a contractor proposal in response to an RFP."""
+    rendered = render_prompt(
+        "proposal_generation.j2",
+        rfp_text=input.rfp_text,
+        contractor_slug=input.contractor_slug,
+        contractor_name=input.contractor_name,
+        contractor_profile=input.contractor_profile,
+        contractor_reliability=input.contractor_reliability,
+        contractor_cost_factor=input.contractor_cost_factor,
     )
-    return LLMActivityResult(content=content, artifact_type="SCORECARD")
+
+    system, user = _split_system_user(rendered)
+    provider = get_llm_provider(get_settings())
+    content = await provider.complete(prompt=user, system=system, temperature=0.8)
+
+    return LLMResult(content=content, artifact_type="PROPOSAL")
 
 
 @activity.defn
-async def generate_test_report(input: GenerateTestReportInput) -> LLMActivityResult:
-    """Generate a test report for a component test.
+async def evaluate_proposal(input: EvaluateProposalInput) -> LLMResult:
+    """Evaluate a contractor proposal against an RFP and rubric."""
+    npr_context = load_npr_context(input.component_type) if input.component_type else ""
 
-    Phase 1 stub: returns template report.
-    """
-    status = "PASS" if input.passed else "FAIL"
-    content = (
-        f"TEST REPORT: {input.test_name}\n"
-        f"Component: {input.component_name}\n"
-        f"Result: {status}\n\n"
-        f"Details: {input.details or 'Standard test procedure completed.'}\n\n"
-        f"{'All acceptance criteria met.' if input.passed else 'Component did not meet acceptance criteria. Rework recommended.'}\n"
+    rendered = render_prompt(
+        "scorecard_generation.j2",
+        rfp_text=input.rfp_text,
+        rubric_json=input.rubric_json,
+        proposal_text=input.proposal_text,
+        contractor_name=input.contractor_name,
+        npr_context=npr_context,
     )
-    return LLMActivityResult(content=content, artifact_type="TEST_REPORT")
+
+    system, user = _split_system_user(rendered)
+    provider = get_llm_provider(get_settings())
+    raw = await provider.complete(prompt=user, system=system, temperature=0.2)
+
+    # Extract JSON from potential markdown fences, then validate
+    content = _extract_json(raw)
+    json.loads(content)
+
+    return LLMResult(
+        content=content,
+        artifact_type="SCORECARD",
+        metadata={"format": "json"},
+    )
+
+
+@activity.defn
+async def generate_test_report(input: GenerateTestReportInput) -> LLMResult:
+    """Generate a test report for a component test."""
+    component_type = input.component_type or "structures"
+    npr_context = load_npr_context(component_type)
+
+    template = "test_report_generation.j2" if input.passed else "failure_report_generation.j2"
+    artifact_type = "TEST_REPORT" if input.passed else "FAILURE_REPORT"
+
+    rendered = render_prompt(
+        template,
+        test_name=input.test_name,
+        component_name=input.component_name,
+        component_type=component_type,
+        details=input.details,
+        npr_context=npr_context,
+    )
+
+    system, user = _split_system_user(rendered)
+    provider = get_llm_provider(get_settings())
+    content = await provider.complete(prompt=user, system=system, temperature=0.5)
+
+    return LLMResult(content=content, artifact_type=artifact_type)

@@ -6,6 +6,7 @@
                 <th>Phase</th>
                 <th>Status</th>
                 <th>Type</th>
+                <th>Artifacts</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -21,6 +22,11 @@
                 <td><span class="badge bg-phase-{{ task.phase }}">{{ task.phase | replace('_', ' ') }}</span></td>
                 <td><span class="badge bg-status-{{ task.status }}">{{ task.status }}</span></td>
                 <td><span class="badge bg-secondary">{{ task.task_type }}</span></td>
+                <td>
+                    {% if task_scorecards is defined and task_scorecards.get(task.id | string) %}
+                    <span class="badge bg-info" title="Scorecard available"><i class="bi bi-clipboard-check"></i> Scorecard</span>
+                    {% endif %}
+                </td>
                 <td>
                     {% if task.status in ['AVAILABLE', 'IN_PROGRESS'] %}
                     <div class="btn-group btn-group-sm">
@@ -40,6 +46,15 @@
                     {% endif %}
                 </td>
             </tr>
+            {% if task_scorecards is defined and task_scorecards.get(task.id | string) %}
+            <tr>
+                <td colspan="6" class="p-0 border-0">
+                    {% with scorecard=task_scorecards[task.id | string] %}
+                    {% include "partials/review/scorecard.html" %}
+                    {% endwith %}
+                </td>
+            </tr>
+            {% endif %}
             {% endfor %}
         </tbody>
     </table>

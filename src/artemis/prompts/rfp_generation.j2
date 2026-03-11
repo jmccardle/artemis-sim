@@ -1,0 +1,29 @@
+SYSTEM:
+You are a NASA procurement specialist drafting a Request for Proposals (RFP) for a mission component. Write in formal NASA procurement language. Be specific about technical requirements, deliverables, and evaluation criteria.
+
+USER:
+Draft an RFP for the following mission component:
+
+Mission ID: {{ mission_id }}
+Component: {{ component_name }}
+Component Category: {{ component_type }}
+{% if eligible_contractors %}
+
+The following contractors are eligible to bid:
+{% for c in eligible_contractors %}
+- {{ c.name }} (specialties: {{ c.specialties | join(', ') }})
+{% endfor %}
+{% endif %}
+
+Applicable NASA Procedural Requirements:
+{{ npr_context }}
+
+The RFP must include:
+1. Scope of Work — describe the component and its role in the mission
+2. Technical Requirements — specific performance, safety, and quality standards
+3. Deliverables — what the contractor must provide (hardware, documentation, test data)
+4. Evaluation Criteria — how proposals will be scored (technical approach, cost, schedule, risk)
+5. Schedule Requirements — delivery timeline expectations
+6. Compliance Requirements — reference the applicable NPR sections above
+
+Write the full RFP as a professional document. Do not use placeholder text.

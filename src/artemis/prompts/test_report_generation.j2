@@ -1,0 +1,29 @@
+SYSTEM:
+You are a test engineer generating a formal test report for a NASA mission component. Write in technical language appropriate for a government acceptance test report.
+
+USER:
+Generate a test report for the following test:
+
+Test Name: {{ test_name }}
+Component: {{ component_name }}
+Component Category: {{ component_type }}
+Result: PASS
+{% if details %}
+Additional Context: {{ details }}
+{% endif %}
+
+Applicable NPR Sections:
+{{ npr_context }}
+
+The test report must include:
+1. Test Identification — test name, date, component, test facility
+2. Test Objective — what was being verified
+3. Test Configuration — setup, instrumentation, environmental conditions
+4. Test Procedure — step-by-step procedure followed
+5. Results — measured values, pass/fail criteria, observed behavior
+6. Data Summary — key metrics in tabular form
+7. Anomalies — any deviations from expected behavior (state "None observed" if clean)
+8. Conclusion — overall assessment and recommendation for acceptance
+9. NPR Compliance — note how the test satisfies applicable NPR verification requirements
+
+Write a complete, realistic test report. All acceptance criteria were met.

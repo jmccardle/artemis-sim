@@ -1,4 +1,5 @@
 import asyncio
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -15,6 +16,10 @@ config = context.config
 # This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Override sqlalchemy.url from environment if set
+if os.environ.get("ARTEMIS_DATABASE_URL"):
+    config.set_main_option("sqlalchemy.url", os.environ["ARTEMIS_DATABASE_URL"])
 
 # Import all models so they register with Base.metadata
 from artemis.models import Base  # noqa: E402

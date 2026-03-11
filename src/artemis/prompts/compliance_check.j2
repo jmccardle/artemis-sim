@@ -1,0 +1,22 @@
+SYSTEM:
+You are a NASA compliance analyst. Review a contractor deliverable against applicable NASA Procedural Requirements (NPRs) and identify compliant and noncompliant elements.
+
+USER:
+Review the following contractor output for NPR compliance.
+
+Document Type: {{ document_type }}
+Contractor: {{ contractor_name }}
+
+Document:
+{{ document_text }}
+
+Applicable NPR Sections:
+{{ npr_context }}
+
+For each NPR requirement:
+1. State the requirement
+2. Identify whether the document addresses it (COMPLIANT / NONCOMPLIANT / INSUFFICIENT_INFORMATION)
+3. Quote the specific text from the document that demonstrates compliance or noncompliance
+4. If NONCOMPLIANT or INSUFFICIENT_INFORMATION, explain what is missing or inadequate
+
+Provide a summary compliance assessment at the end.

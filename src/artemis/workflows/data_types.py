@@ -324,6 +324,8 @@ class EvaluateProposalInput:
     rfp_text: str
     proposal_text: str
     contractor_name: str
+    rubric_json: str = ""
+    component_type: str = ""
 
 
 @dataclass
@@ -332,6 +334,36 @@ class GenerateTestReportInput:
     passed: bool
     component_name: str
     details: str = ""
+    component_type: str = ""
+
+
+@dataclass
+class GenerateRubricInput:
+    rfp_text: str
+    component_type: str
+
+
+@dataclass
+class ContractorInfo:
+    """Lightweight contractor data safe for workflow serialization."""
+    slug: str
+    name: str
+    profile: str
+    reliability: float
+    cost_factor: float
+    specialties: list[str] = field(default_factory=list)
+
+
+@dataclass
+class SaveArtifactInput:
+    task_id: str
+    artifact_type: str
+    content: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class GetContractorsBySpecialtyInput:
+    specialty: str
 
 
 @dataclass

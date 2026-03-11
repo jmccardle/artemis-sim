@@ -4,15 +4,58 @@
     <div class="list-group-item px-0">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <span class="badge bg-secondary">{{ artifact.artifact_type }}</span>
+                <span class="badge {% if artifact.artifact_type in ['SCORECARD', 'RUBRIC'] %}bg-info{% elif artifact.artifact_type == 'FAILURE_REPORT' %}bg-danger{% elif artifact.artifact_type == 'TEST_REPORT' %}bg-success{% else %}bg-secondary{% endif %}">
+                    {{ artifact.artifact_type | replace('_', ' ') }}
+                </span>
                 <small class="text-muted ms-2">{{ artifact.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
             </div>
             <button class="btn btn-sm btn-outline-primary"
-                    onclick="this.nextElementSibling.classList.toggle('d-none')">
+                    onclick="this.closest('.list-group-item').querySelector('.artifact-content').classList.toggle('d-none')">
                 <i class="bi bi-eye"></i> View
             </button>
         </div>
-        <pre class="d-none mt-2 p-2 bg-light rounded small" style="max-height: 300px; overflow-y: auto;">{{ artifact.content | tojson(indent=2) }}</pre>
+        <div class="artifact-content d-none mt-2">
+            {% if artifact.content.get('text') %}
+                {# Plain text artifact (RFP, proposal, test report) #}
+                <pre class="p-2 bg-light rounded small" style="max-height: 300px; overflow-y: auto; white-space: pre-wrap;">{{ artifact.content.text }}</pre>
+            {% elif artifact.content.get('scorecard') %}
+                {# Structured scorecard — try to parse and render as table #}
+                {% set sc_raw = artifact.content.scorecard %}
+                {% if sc_raw is mapping %}
+                    {% set sc = sc_raw %}
+                {% else %}
+                    {# It's a JSON string — template can't parse it, show as formatted text #}
+                    {% set sc = none %}
+                {% endif %}
+                {% if sc and sc.get('criteria') %}
+                <table class="table table-sm mb-2">
+                    <thead><tr><th>Criterion</th><th>Score</th><th>Justification</th></tr></thead>
+                    <tbody>
+                    {% for c in sc.criteria %}
+                    <tr>
+                        <td>{{ c.name }}</td>
+                        <td><span class="badge {% if c.score >= 4 %}bg-success{% elif c.score >= 3 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ c.score }}/5</span></td>
+                        <td class="small">{{ c.justification | default('—') }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% if sc.overall_recommendation %}
+                <span class="badge {% if sc.overall_recommendation == 'STRONG_ACCEPT' %}bg-success{% elif sc.overall_recommendation == 'ACCEPT' %}bg-primary{% elif sc.overall_recommendation == 'CONDITIONAL' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                    {{ sc.overall_recommendation | replace('_', ' ') }}
+                </span>
+                {% endif %}
+                {% else %}
+                <pre class="p-2 bg-light rounded small" style="max-height: 300px; overflow-y: auto;">{{ sc_raw }}</pre>
+                {% endif %}
+            {% elif artifact.content.get('rubric') %}
+                {# Rubric JSON — show formatted #}
+                <pre class="p-2 bg-light rounded small" style="max-height: 300px; overflow-y: auto;">{{ artifact.content.rubric }}</pre>
+            {% else %}
+                {# Fallback: dump entire content as JSON #}
+                <pre class="p-2 bg-light rounded small" style="max-height: 300px; overflow-y: auto;">{{ artifact.content | tojson(indent=2) }}</pre>
+            {% endif %}
+        </div>
     </div>
     {% endfor %}
 </div>
