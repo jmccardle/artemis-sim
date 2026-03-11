@@ -11,11 +11,14 @@ from artemis.activities.llm import (
     evaluate_proposal,
     generate_proposal,
     generate_rfp,
+    generate_rubric,
     generate_test_report,
 )
 from artemis.activities.persistence import (
     create_mission_tasks,
+    get_contractors_by_specialty,
     get_tasks_by_phase,
+    save_artifact,
     update_mission_status,
     update_task_status,
 )
@@ -54,11 +57,15 @@ ALL_ACTIVITIES = [
     update_mission_status,
     update_task_status,
     get_tasks_by_phase,
-    # LLM (stubs for Phase 1)
+    # LLM
     generate_rfp,
+    generate_rubric,
     generate_proposal,
     evaluate_proposal,
     generate_test_report,
+    # Persistence (artifacts + contractors)
+    save_artifact,
+    get_contractors_by_specialty,
     # Simulation
     run_inspection,
 ]

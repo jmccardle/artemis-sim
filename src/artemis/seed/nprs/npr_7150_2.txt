@@ -1,0 +1,6 @@
+NPR 7150.2D §5.1 — Software Assurance (simplified):
+
+All flight software shall be classified by criticality level (A through D). Class A
+software (loss of life/vehicle) requires: 100% requirements-based test coverage,
+independent verification and validation (IV&V), formal code inspection of all safety-
+critical paths, and documented traceability from requirements through test results.

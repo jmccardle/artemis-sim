@@ -1,0 +1,6 @@
+NPR 8705.2C §3.4 — Structural Verification (simplified):
+
+All human-rated structural components shall demonstrate a factor of safety of 1.4
+for yield and 2.0 for ultimate under all design load conditions. Verification shall
+be by test (preferred), analysis, or a combination thereof with documented rationale
+for any analysis-only verification.
