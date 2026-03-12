@@ -17,9 +17,19 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Override sqlalchemy.url from environment if set
+# Override sqlalchemy.url from environment — full URL or component fields
 if os.environ.get("ARTEMIS_DATABASE_URL"):
     config.set_main_option("sqlalchemy.url", os.environ["ARTEMIS_DATABASE_URL"])
+elif os.environ.get("ARTEMIS_DB_PASSWORD"):
+    _user = os.environ.get("ARTEMIS_DB_USER", "artemis")
+    _pass = os.environ["ARTEMIS_DB_PASSWORD"]
+    _host = os.environ.get("ARTEMIS_DB_HOST", "localhost")
+    _port = os.environ.get("ARTEMIS_DB_PORT", "5432")
+    _name = os.environ.get("ARTEMIS_DB_NAME", "artemis")
+    config.set_main_option(
+        "sqlalchemy.url",
+        f"postgresql+asyncpg://{_user}:{_pass}@{_host}:{_port}/{_name}",
+    )
 
 # Import all models so they register with Base.metadata
 from artemis.models import Base  # noqa: E402

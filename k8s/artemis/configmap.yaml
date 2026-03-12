@@ -6,7 +6,11 @@ metadata:
   name: artemis-config
   namespace: artemis
 data:
-  ARTEMIS_DATABASE_URL: "postgresql+asyncpg://artemis:artemis@postgres:5432/artemis"
+  # Database — password injected from Secret, not here
+  ARTEMIS_DB_HOST: "postgres"
+  ARTEMIS_DB_PORT: "5432"
+  ARTEMIS_DB_USER: "artemis"
+  ARTEMIS_DB_NAME: "artemis"
   ARTEMIS_TEMPORAL_HOST: "temporal-server:7233"
   ARTEMIS_TEMPORAL_NAMESPACE: "default"
   ARTEMIS_TEMPORAL_ORCHESTRATION_QUEUE: "artemis-orchestration"

@@ -22,6 +22,11 @@ spec:
             - configMapRef:
                 name: artemis-config
           env:
+            - name: ARTEMIS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: artemis-secrets
+                  key: db-password
             - name: ARTEMIS_SESSION_SECRET
               valueFrom:
                 secretKeyRef:
@@ -63,6 +68,11 @@ spec:
             - configMapRef:
                 name: artemis-config
           env:
+            - name: ARTEMIS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: artemis-secrets
+                  key: db-password
             - name: ARTEMIS_SESSION_SECRET
               valueFrom:
                 secretKeyRef:

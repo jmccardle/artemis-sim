@@ -6,8 +6,23 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="ARTEMIS_", env_file=".env", env_file_encoding="utf-8")
 
-    # Database
-    database_url: str = "postgresql+asyncpg://artemis:artemis@localhost:5432/artemis"
+    # Database — set database_url for a full override (docker-compose),
+    # or set the individual db_* fields (K8s with password from Secret).
+    database_url: str = ""
+    db_host: str = "localhost"
+    db_port: int = 5432
+    db_user: str = "artemis"
+    db_password: str = "artemis"
+    db_name: str = "artemis"
+
+    @property
+    def effective_database_url(self) -> str:
+        if self.database_url:
+            return self.database_url
+        return (
+            f"postgresql+asyncpg://{self.db_user}:{self.db_password}"
+            f"@{self.db_host}:{self.db_port}/{self.db_name}"
+        )
 
     # Temporal
     temporal_host: str = "localhost:7233"

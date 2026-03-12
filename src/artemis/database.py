@@ -7,7 +7,7 @@ from artemis.config import get_settings
 _settings = get_settings()
 
 engine = create_async_engine(
-    _settings.database_url,
+    _settings.effective_database_url,
     echo=_settings.debug,
     pool_pre_ping=True,
 )

@@ -95,9 +95,18 @@ Edit `k8s/artemis/app.yaml`:
 - Replace `YOUR_NODE_IP` in `hostAliases` with the node IP where Keycloak's
   ingress resolves
 
-Edit `k8s/artemis/secret.yaml`:
-- Set `session-secret` to a random value (`openssl rand -hex 32`)
-- Set `llm-api-key` if using OpenAI/Anthropic
+Create secrets (or edit `k8s/artemis/secret.yaml`):
+
+```bash
+kubectl -n artemis create secret generic artemis-secrets \
+  --from-literal=db-password="$(openssl rand -base64 32)" \
+  --from-literal=session-secret="$(openssl rand -hex 32)" \
+  --from-literal=llm-api-key="not-needed"
+```
+
+The database password flows from the Secret into both PostgreSQL (via
+`postgres.yaml`) and the app containers (via `ARTEMIS_DB_PASSWORD` env var).
+No password appears in the ConfigMap.
 
 Deploy:
 
