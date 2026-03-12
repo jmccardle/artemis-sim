@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: worker
-          image: artemis-sim:latest
-          imagePullPolicy: Never
+          image: registry.local:30500/artemis-sim:latest
+          imagePullPolicy: Always
           command: ["python", "-m", "artemis.workers.main"]
           envFrom:
             - configMapRef:
@@ -56,8 +56,8 @@ spec:
     spec:
       containers:
         - name: llm-worker
-          image: artemis-sim:latest
-          imagePullPolicy: Never
+          image: registry.local:30500/artemis-sim:latest
+          imagePullPolicy: Always
           command: ["python", "-m", "artemis.workers.llm_worker"]
           envFrom:
             - configMapRef:

@@ -155,3 +155,45 @@ class SimulationStatusResponse(BaseModel):
     facility_count: int = 0
     contractor_count: int = 0
     temporal_connected: bool = False
+
+
+# --- Invoice ---
+
+class InvoiceCreate(BaseModel):
+    mission_id: uuid.UUID
+    amount: float
+    description: str
+    line_items: list[dict] = []
+    task_id: uuid.UUID | None = None
+
+
+class InvoiceResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    contractor_id: uuid.UUID
+    mission_id: uuid.UUID
+    task_id: uuid.UUID | None = None
+    invoice_number: str
+    amount: float
+    status: str
+    description: str
+    line_items: list = []
+    submitted_at: datetime
+    reviewed_at: datetime | None = None
+    reviewer_username: str | None = None
+    notes: str = ""
+    created_at: datetime
+    updated_at: datetime
+
+
+class InvoiceStatusUpdate(BaseModel):
+    status: str
+    notes: str = ""
+
+
+class BudgetSummary(BaseModel):
+    total: float = 0.0
+    by_mission: dict[str, float] = {}
+    by_contractor: dict[str, float] = {}
+    invoice_count: int = 0

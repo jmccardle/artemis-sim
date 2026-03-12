@@ -10,6 +10,7 @@ from artemis.database import get_db_session
 from artemis.events import Event, event_bus
 from artemis.services import admin as admin_svc
 from artemis.services import clock as clock_svc
+from artemis.services import invoices as invoice_svc
 from artemis.services import missions as mission_svc
 from artemis.services import tasks as task_svc
 from artemis.templating import templates
@@ -181,4 +182,114 @@ async def create_mission_action(
     return templates.TemplateResponse(
         "partials/admin/simulation_status.html",
         {"request": request, "status": status},
+    )
+
+
+# ── Contractor Invoice Actions ───────────────────────────────────────
+
+@router.post("/contractor/{slug}/invoices", response_class=HTMLResponse)
+async def submit_invoice_action(
+    slug: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """HTMX: contractor submits an invoice."""
+    form = await request.form()
+    mission_id = uuid.UUID(form["mission_id"])
+    amount = float(form["amount"])
+    description = form.get("description", "")
+
+    # Parse line items from text format ("desc | amount" per line)
+    line_items = []
+    raw = form.get("line_items_text", "")
+    if raw:
+        for line in raw.strip().splitlines():
+            parts = [p.strip() for p in line.split("|")]
+            if len(parts) == 2:
+                line_items.append({"description": parts[0], "amount": float(parts[1])})
+            elif parts[0]:
+                line_items.append({"description": parts[0], "amount": 0})
+
+    invoice = await invoice_svc.create_invoice(
+        db,
+        contractor_slug=slug,
+        mission_id=mission_id,
+        amount=amount,
+        description=description,
+        line_items=line_items,
+    )
+
+    await event_bus.publish(Event(
+        event_type="notification",
+        data={"message": f"Invoice {invoice.invoice_number} submitted", "type": "success"},
+    ))
+
+    # Return updated invoice list
+    invoices = await invoice_svc.list_invoices_for_contractor(db, slug)
+    return templates.TemplateResponse(
+        "partials/contractor/invoice_list.html",
+        {"request": request, "invoices": invoices},
+    )
+
+
+# ── Contracts Officer Invoice Review Actions ─────────────────────────
+
+@router.post("/invoices/{invoice_id}/review", response_class=HTMLResponse)
+async def review_invoice_action(
+    invoice_id: uuid.UUID,
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """HTMX: contracts officer approves or rejects an invoice."""
+    user = get_session_user(request)
+    username = user.username if user else "contracts-officer"
+    form = await request.form()
+    action = form.get("action", "")  # "approve" or "reject"
+    notes = form.get("notes", "")
+    contractor_slug = form.get("contractor_slug", "")
+
+    if action == "approve":
+        new_status = "UNDER_REVIEW"
+        # Two-step: SUBMITTED -> UNDER_REVIEW -> APPROVED
+        # First move to UNDER_REVIEW, then to APPROVED
+        inv = await invoice_svc.update_invoice_status(
+            db, contractor_slug, invoice_id, "UNDER_REVIEW", username, notes
+        )
+        inv = await invoice_svc.update_invoice_status(
+            db, contractor_slug, invoice_id, "APPROVED", username, notes
+        )
+        msg = f"Invoice {inv.invoice_number} approved"
+        msg_type = "success"
+    elif action == "reject":
+        inv = await invoice_svc.update_invoice_status(
+            db, contractor_slug, invoice_id, "UNDER_REVIEW", username, notes
+        )
+        inv = await invoice_svc.update_invoice_status(
+            db, contractor_slug, invoice_id, "REJECTED", username, notes
+        )
+        msg = f"Invoice {inv.invoice_number} rejected"
+        msg_type = "warning"
+    else:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=f"Unknown review action: {action}")
+
+    await event_bus.publish(Event(
+        event_type="notification",
+        data={"message": msg, "type": msg_type},
+    ))
+
+    # Return updated pending invoices for contracts officer
+    from artemis.services import contractors as contractor_svc
+    pending = await invoice_svc.list_all_invoices(db, status="SUBMITTED")
+    budget = await invoice_svc.get_budget_summary(db)
+    contractors = await contractor_svc.list_contractors(db)
+    return templates.TemplateResponse(
+        "partials/contracts/invoice_review.html",
+        {
+            "request": request,
+            "pending_invoices": pending,
+            "budget": budget,
+            "contractor_map": {str(c.id): c.slug for c in contractors},
+            "contractor_name_map": {str(c.id): c.name for c in contractors},
+        },
     )

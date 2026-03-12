@@ -1,0 +1,41 @@
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-plus-circle"></i> Submit Invoice</h6>
+    </div>
+    <div class="card-body">
+        <form hx-post="/views/contractor/{{ contractor.slug }}/invoices"
+              hx-target="#invoice-list"
+              hx-swap="innerHTML"
+              class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Mission</label>
+                <select name="mission_id" class="form-select" required>
+                    <option value="">Select mission...</option>
+                    {% for mission in missions %}
+                    <option value="{{ mission.id }}">{{ mission.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Amount ($)</label>
+                <input type="number" name="amount" class="form-control" step="0.01" min="0.01" required
+                       placeholder="0.00">
+            </div>
+            <div class="col-12">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-control" rows="2" required
+                          placeholder="Describe the work completed..."></textarea>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Line Items (one per line: description | amount)</label>
+                <textarea name="line_items_text" class="form-control" rows="3"
+                          placeholder="Motor assembly labor | 500.00&#10;Materials | 150.00"></textarea>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-send"></i> Submit Invoice
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

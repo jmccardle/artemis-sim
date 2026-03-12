@@ -6,7 +6,17 @@ from fastapi import HTTPException
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from artemis.models import Contractor, Facility, Mission, SimulatedClock, Task, TaskArtifact
+from artemis.models import (
+    Contractor,
+    Facility,
+    Invoice,
+    Mission,
+    MissionStatus,
+    SimulatedClock,
+    Task,
+    TaskArtifact,
+    TaskStatus,
+)
 from artemis.seed.contractors import seed_contractors
 from artemis.seed.facilities import seed_facilities
 
@@ -37,6 +47,7 @@ class StatusResult:
 
 async def reset_simulation(db: AsyncSession, username: str, reason: str) -> ResetResult:
     # Truncate all application tables (order matters for FK constraints)
+    await db.execute(delete(Invoice))
     await db.execute(delete(TaskArtifact))
     await db.execute(delete(Task))
     await db.execute(delete(Mission))
@@ -63,7 +74,7 @@ async def reset_simulation(db: AsyncSession, username: str, reason: str) -> Rese
 async def seed_scenario(
     db: AsyncSession, scenario_name: str, username: str
 ) -> ResetResult:
-    known_scenarios = {"clean"}
+    known_scenarios = {"clean", "estes-mid-delivery"}
     if scenario_name not in known_scenarios:
         raise HTTPException(
             status_code=404,
@@ -73,11 +84,64 @@ async def seed_scenario(
     if scenario_name == "clean":
         return await reset_simulation(db, username, f"seed scenario: {scenario_name}")
 
-    # Unreachable given the check above, but explicit for clarity
+    if scenario_name == "estes-mid-delivery":
+        return await _seed_estes_mid_delivery(db, username)
+
     raise HTTPException(status_code=404, detail=f"Unknown scenario: {scenario_name}")
 
 
-async def get_status(db: AsyncSession) -> StatusResult:
+async def _seed_estes_mid_delivery(db: AsyncSession, username: str) -> ResetResult:
+    """Seed DB with Estes I in DELIVERY phase and Estes II in PROCUREMENT.
+
+    DB state only — no running workflows (documented POC limitation).
+    """
+    # Start clean
+    await reset_simulation(db, username, "seed scenario: estes-mid-delivery (base)")
+
+    from artemis.seed.estes_mission import create_estes_tasks
+
+    # Estes I — PROCUREMENT completed, DELIVERY in-progress
+    estes_1 = Mission(
+        name="Estes I",
+        architecture_type="estes",
+        status=MissionStatus.IN_PROGRESS,
+    )
+    db.add(estes_1)
+    await db.flush()
+
+    tasks_1 = await create_estes_tasks(db, estes_1.id)
+    # Mark all procurement tasks as COMPLETED
+    for t in tasks_1:
+        if t.phase == "PROCUREMENT":
+            t.status = TaskStatus.COMPLETED
+    # Mark "Ship" delivery tasks as COMPLETED, "Receive" as AVAILABLE
+    for t in tasks_1:
+        if t.phase == "DELIVERY" and t.name.startswith("Ship "):
+            t.status = TaskStatus.COMPLETED
+        elif t.phase == "DELIVERY" and t.name.startswith("Receive "):
+            t.status = TaskStatus.AVAILABLE
+
+    # Estes II — in PROCUREMENT (all tasks at initial state)
+    estes_2 = Mission(
+        name="Estes II",
+        architecture_type="estes",
+        status=MissionStatus.IN_PROGRESS,
+    )
+    db.add(estes_2)
+    await db.flush()
+    await create_estes_tasks(db, estes_2.id)
+
+    await db.commit()
+
+    return ResetResult(
+        status=f"Seeded estes-mid-delivery by {username}: Estes I in DELIVERY, Estes II in PROCUREMENT",
+        timestamp=datetime.now(timezone.utc),
+    )
+
+
+async def get_status(
+    db: AsyncSession, temporal_client=None
+) -> StatusResult:
     mission_count = (await db.execute(select(func.count(Mission.id)))).scalar() or 0
     task_count = (await db.execute(select(func.count(Task.id)))).scalar() or 0
     facility_count = (await db.execute(select(func.count(Facility.id)))).scalar() or 0
@@ -86,11 +150,22 @@ async def get_status(db: AsyncSession) -> StatusResult:
     clock_result = await db.execute(select(SimulatedClock).limit(1))
     clock = clock_result.scalar_one_or_none()
 
+    # Check Temporal connectivity
+    temporal_connected = False
+    if temporal_client is not None:
+        try:
+            from artemis.workflows.data_types import CLOCK_WORKFLOW_ID
+            handle = temporal_client.get_workflow_handle(CLOCK_WORKFLOW_ID)
+            await handle.query("get_current_time")
+            temporal_connected = True
+        except Exception:
+            pass
+
     return StatusResult(
         simulated_time=clock.current_time if clock else None,
         mission_count=mission_count,
         task_count=task_count,
         facility_count=facility_count,
         contractor_count=contractor_count,
-        temporal_connected=False,
+        temporal_connected=temporal_connected,
     )

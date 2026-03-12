@@ -10,8 +10,8 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: migrate
-          image: artemis-sim:latest
-          imagePullPolicy: Never
+          image: registry.local:30500/artemis-sim:latest
+          imagePullPolicy: Always
           command: ["alembic", "upgrade", "head"]
           envFrom:
             - configMapRef:
@@ -48,8 +48,8 @@ spec:
           hostnames: ["keycloak.local"]
       containers:
         - name: app
-          image: artemis-sim:latest
-          imagePullPolicy: Never
+          image: registry.local:30500/artemis-sim:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           envFrom:

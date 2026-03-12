@@ -1,4 +1,40 @@
-{% if contractors %}
+{% if budget and budget.by_contractor %}
+<h5 class="mb-3 mt-4"><i class="bi bi-bar-chart"></i> Budget by Contractor</h5>
+<div class="table-responsive">
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Contractor</th>
+                <th>Approved Amount</th>
+                <th>Share</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for slug, amount in budget.by_contractor.items() %}
+            <tr>
+                <td class="fw-semibold">{{ slug }}</td>
+                <td>${{ "%.2f" | format(amount) }}</td>
+                <td>
+                    {% if budget.total > 0 %}
+                    <div class="progress" style="width: 120px; height: 0.5rem;">
+                        <div class="progress-bar bg-primary"
+                             style="width: {{ (amount / budget.total * 100) | round(0) }}%"></div>
+                    </div>
+                    <small>{{ (amount / budget.total * 100) | round(1) }}%</small>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            <tr class="table-active">
+                <td class="fw-bold">Total</td>
+                <td class="fw-bold">${{ "%.2f" | format(budget.total) }}</td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% elif contractors %}
+<h5 class="mb-3 mt-4"><i class="bi bi-bar-chart"></i> Contractors</h5>
 <div class="table-responsive">
     <table class="table table-sm">
         <thead>

@@ -1,0 +1,54 @@
+{% if invoices %}
+<div class="table-responsive">
+    <table class="table table-sm table-hover">
+        <thead>
+            <tr>
+                <th>Invoice #</th>
+                <th>Amount</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th>Reviewer</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inv in invoices %}
+            <tr>
+                <td class="fw-semibold">{{ inv.invoice_number }}</td>
+                <td>${{ "%.2f" | format(inv.amount) }}</td>
+                <td>{{ inv.description[:60] }}{% if inv.description | length > 60 %}...{% endif %}</td>
+                <td>
+                    {% if inv.status == "SUBMITTED" %}
+                    <span class="badge bg-info">Submitted</span>
+                    {% elif inv.status == "UNDER_REVIEW" %}
+                    <span class="badge bg-warning text-dark">Under Review</span>
+                    {% elif inv.status == "APPROVED" %}
+                    <span class="badge bg-success">Approved</span>
+                    {% elif inv.status == "REJECTED" %}
+                    <span class="badge bg-danger">Rejected</span>
+                    {% elif inv.status == "PAID" %}
+                    <span class="badge bg-primary">Paid</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ inv.status }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ inv.submitted_at.strftime('%Y-%m-%d %H:%M') if inv.submitted_at else '-' }}</td>
+                <td>{{ inv.reviewer_username or '-' }}</td>
+            </tr>
+            {% if inv.notes %}
+            <tr>
+                <td colspan="6" class="ps-4 text-muted small border-0 pt-0">
+                    <i class="bi bi-chat-dots"></i> {{ inv.notes }}
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="text-center text-muted py-4">
+    <i class="bi bi-receipt fs-1 d-block mb-2"></i>
+    <p>No invoices submitted yet.</p>
+</div>
+{% endif %}

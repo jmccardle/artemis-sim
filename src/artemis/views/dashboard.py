@@ -9,6 +9,7 @@ from artemis.services import admin as admin_svc
 from artemis.services import clock as clock_svc
 from artemis.services import contractors as contractor_svc
 from artemis.services import facilities as facility_svc
+from artemis.services import invoices as invoice_svc
 from artemis.services import missions as mission_svc
 from artemis.services import tasks as task_svc
 from artemis.templating import templates
@@ -110,7 +111,13 @@ async def dashboard(
             )
             contract_tasks.extend(tasks)
         context["contract_tasks"] = contract_tasks
-        context["contractors"] = await contractor_svc.list_contractors(db)
+        contractors = await contractor_svc.list_contractors(db)
+        context["contractors"] = contractors
+        # Map contractor_id → slug for invoice review forms
+        context["contractor_map"] = {str(c.id): c.slug for c in contractors}
+        context["contractor_name_map"] = {str(c.id): c.name for c in contractors}
+        context["pending_invoices"] = await invoice_svc.list_all_invoices(db, status="SUBMITTED")
+        context["budget"] = await invoice_svc.get_budget_summary(db)
 
     elif role == "contractor-pm":
         missions = await mission_svc.list_missions(db)
