@@ -27,7 +27,7 @@ spec:
       containers:
         - name: postgres
           image: postgres:16
-          env:
+          env:  # dev defaults — change for real deployments
             - name: POSTGRES_DB
               value: keycloak
             - name: POSTGRES_USER

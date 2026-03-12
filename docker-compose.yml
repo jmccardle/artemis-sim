@@ -1,3 +1,4 @@
+# Local development stack. All credentials below are dev defaults.
 services:
   # Application PostgreSQL (mission data, artifacts, user state)
   postgresql:

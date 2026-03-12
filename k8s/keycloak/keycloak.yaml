@@ -168,9 +168,9 @@ spec:
               value: keycloak
             - name: KC_HEALTH_ENABLED
               value: "true"
-            - name: KEYCLOAK_ADMIN
+            - name: KEYCLOAK_ADMIN           # dev default — change for real deployments
               value: admin
-            - name: KEYCLOAK_ADMIN_PASSWORD
+            - name: KEYCLOAK_ADMIN_PASSWORD   # dev default — change for real deployments
               value: admin
           ports:
             - containerPort: 8080

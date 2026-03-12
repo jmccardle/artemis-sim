@@ -93,9 +93,9 @@ spec:
               value: postgres12
             - name: DB_PORT
               value: "5432"
-            - name: POSTGRES_USER
+            - name: POSTGRES_USER    # dev default
               value: temporal
-            - name: POSTGRES_PWD
+            - name: POSTGRES_PWD     # dev default
               value: temporal
             - name: POSTGRES_SEEDS
               value: temporal-postgres

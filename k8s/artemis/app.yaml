@@ -44,7 +44,7 @@ spec:
         app: artemis-app
     spec:
       hostAliases:
-        - ip: "192.168.1.100"
+        - ip: "YOUR_NODE_IP"       # replace with node IP where Keycloak ingress resolves
           hostnames: ["keycloak.local"]
       containers:
         - name: app

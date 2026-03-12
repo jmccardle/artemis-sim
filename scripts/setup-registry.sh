@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 # One-time setup: configure K3s and Docker to use the local registry.
-# Run with: sudo ./scripts/setup-registry.sh
+# Run with: sudo ./scripts/setup-registry.sh [NODE_IP]
 set -euo pipefail
 
 REGISTRY_HOST="registry.local"
 REGISTRY_PORT="30500"
-NODE_IP="192.168.1.100"
+
+# Auto-detect node IP from default route, or accept as argument
+if [[ -n "${1:-}" ]]; then
+    NODE_IP="$1"
+else
+    NODE_IP="$(ip route get 1.1.1.1 | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}')"
+    echo "    Auto-detected NODE_IP=${NODE_IP}"
+    echo "    (override with: $0 <ip-address>)"
+fi
 
 echo "==> Adding ${REGISTRY_HOST} to /etc/hosts"
 if ! grep -q "${REGISTRY_HOST}" /etc/hosts; then

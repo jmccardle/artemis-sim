@@ -1,3 +1,5 @@
+# Adjust hostnames and LLM endpoint for your environment.
+# *.local hostnames require /etc/hosts entries (see docs/DEPLOYMENT.md).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -14,8 +16,8 @@ data:
   ARTEMIS_KEYCLOAK_CLIENT_ID: "artemis-app"
   ARTEMIS_AUTH_DISABLED: "false"
   ARTEMIS_LLM_PROVIDER: "local"
-  ARTEMIS_LLM_MODEL: "glm-4-32b"
-  ARTEMIS_LLM_BASE_URL: "http://192.168.1.100:8100/v1"
+  ARTEMIS_LLM_MODEL: "glm-4-32b"                       # adjust to your model
+  ARTEMIS_LLM_BASE_URL: "http://YOUR_NODE_IP:8100/v1"  # LLM inference server
   ARTEMIS_BASE_URL: "http://artemis.local"
   ARTEMIS_CORS_ORIGINS: "http://keycloak.local,http://temporal.local"
   ARTEMIS_DEBUG: "false"

@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Build, push to local registry, and deploy to K3s.
-# Usage: ./scripts/deploy.sh [--migrate]
+# Build, push, and deploy to K3s.
+# Usage:
+#   ./scripts/deploy.sh [--migrate]                          # local registry
+#   REGISTRY=ghcr.io/yourorg ./scripts/deploy.sh [--migrate] # GitHub Container Registry
 set -euo pipefail
 
-REGISTRY="registry.local:30500"
+REGISTRY="${REGISTRY:-registry.local:30500}"
 IMAGE="${REGISTRY}/artemis-sim"
 TAG="${TAG:-latest}"
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -11,7 +13,7 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 echo "==> Building image ${IMAGE}:${TAG}"
 docker build -t "${IMAGE}:${TAG}" "${PROJECT_DIR}"
 
-echo "==> Pushing to local registry ${REGISTRY}"
+echo "==> Pushing to ${REGISTRY}"
 docker push "${IMAGE}:${TAG}"
 
 echo "==> Applying K8s manifests"
