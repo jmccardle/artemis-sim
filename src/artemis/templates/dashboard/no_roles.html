@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}No Roles Assigned — Artemis{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="card shadow-sm" style="max-width: 500px; width: 100%;">
+        <div class="card-body text-center p-5">
+            <i class="bi bi-person-badge display-3 text-warning mb-3"></i>
+            <h3 class="card-title mb-3">No Roles Assigned</h3>
+            <p class="text-muted mb-2">
+                You're signed in as <strong>{{ user.username or user.email }}</strong>,
+                but your account has no simulation roles assigned.
+            </p>
+            <p class="text-muted mb-4">
+                Ask an administrator to assign one of the following roles in Keycloak:
+            </p>
+            <ul class="list-group list-group-flush text-start mb-4">
+                {% for role, display in available_roles.items() %}
+                <li class="list-group-item"><code>{{ role }}</code> — {{ display }}</li>
+                {% endfor %}
+            </ul>
+            <a href="/logout" class="btn btn-outline-secondary w-100">
+                <i class="bi bi-box-arrow-left"></i> Sign Out
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

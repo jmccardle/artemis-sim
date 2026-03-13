@@ -37,8 +37,24 @@ async def dashboard(
     if user is None:
         return RedirectResponse(url="/login", status_code=302)
 
-    role = user.roles[0] if user.roles else "admin"
-    template_name = ROLE_TEMPLATE_MAP.get(role, "dashboard/admin.html")
+    # Find first recognized role, if any
+    role = None
+    for r in user.roles:
+        if r in ROLE_TEMPLATE_MAP:
+            role = r
+            break
+
+    if role is None:
+        return templates.TemplateResponse(
+            "dashboard/no_roles.html",
+            {
+                "request": request,
+                "user": user,
+                "available_roles": ROLE_DISPLAY_NAMES,
+            },
+        )
+
+    template_name = ROLE_TEMPLATE_MAP[role]
     role_display = ROLE_DISPLAY_NAMES.get(role, role)
 
     # Get clock time (fail gracefully if not initialized)

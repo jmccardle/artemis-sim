@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Authentication Error — Artemis{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="card shadow-sm" style="max-width: 500px; width: 100%;">
+        <div class="card-body text-center p-5">
+            <i class="bi bi-shield-exclamation display-3 text-danger mb-3"></i>
+            <h3 class="card-title mb-3">Authentication Error</h3>
+            <p class="text-muted mb-2">{{ message }}</p>
+            {% if detail %}
+            <pre class="text-start bg-light p-3 rounded small mb-4" style="white-space: pre-wrap;">{{ detail }}</pre>
+            {% endif %}
+            <a href="/login" class="btn btn-primary btn-lg w-100">
+                <i class="bi bi-arrow-clockwise"></i> Try Again
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

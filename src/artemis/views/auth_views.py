@@ -1,5 +1,6 @@
 """Browser authentication views — OIDC login/callback/logout + dev login."""
 
+import logging
 import secrets
 import uuid
 
@@ -12,7 +13,19 @@ from artemis.config import get_settings
 from artemis.templating import templates
 from artemis.views.helpers import ROLE_DISPLAY_NAMES
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+
+def _auth_error(request: Request, message: str, detail: str = "") -> HTMLResponse:
+    """Render the auth error page instead of redirecting to /login (avoids loops)."""
+    logger.warning("Auth error: %s — %s", message, detail)
+    return templates.TemplateResponse(
+        "auth/error.html",
+        {"request": request, "message": message, "detail": detail},
+        status_code=401,
+    )
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -47,28 +60,48 @@ async def auth_callback(request: Request, code: str, state: str):
     # Verify state
     expected_state = request.session.get("oauth_state")
     if state != expected_state:
-        return RedirectResponse(url="/login", status_code=302)
+        return _auth_error(
+            request,
+            "OAuth state mismatch.",
+            "The state parameter did not match. This can happen if your session "
+            "expired or cookies were cleared during login. Try again.",
+        )
 
     # Exchange code for tokens
-    async with httpx.AsyncClient(verify=settings.verify_ssl) as client:
-        token_response = await client.post(
-            settings.keycloak_token_url,
-            data={
-                "grant_type": "authorization_code",
-                "client_id": settings.keycloak_client_id,
-                "code": code,
-                "redirect_uri": f"{settings.base_url}/auth/callback",
-            },
+    try:
+        async with httpx.AsyncClient(verify=settings.verify_ssl) as client:
+            token_response = await client.post(
+                settings.keycloak_token_url,
+                data={
+                    "grant_type": "authorization_code",
+                    "client_id": settings.keycloak_client_id,
+                    "code": code,
+                    "redirect_uri": f"{settings.base_url}/auth/callback",
+                },
+            )
+    except Exception as exc:
+        return _auth_error(
+            request,
+            "Could not reach the identity provider for token exchange.",
+            f"{type(exc).__name__}: {exc}\n\nToken URL: {settings.keycloak_token_url}",
         )
 
     if token_response.status_code != 200:
-        return RedirectResponse(url="/login", status_code=302)
+        return _auth_error(
+            request,
+            "Token exchange failed.",
+            f"Keycloak returned HTTP {token_response.status_code}:\n{token_response.text}",
+        )
 
     tokens = token_response.json()
     access_token = tokens.get("access_token")
 
     if not access_token:
-        return RedirectResponse(url="/login", status_code=302)
+        return _auth_error(
+            request,
+            "No access token in Keycloak response.",
+            f"Response keys: {list(tokens.keys())}",
+        )
 
     # Decode and extract user info (validation via Keycloak JWKS)
     from artemis.auth.dependencies import _get_validator
@@ -77,8 +110,14 @@ async def auth_callback(request: Request, code: str, state: str):
         validator = _get_validator()
         claims = validator.validate_token(access_token)
         user_info = extract_user_info(claims)
-    except Exception:
-        return RedirectResponse(url="/login", status_code=302)
+    except Exception as exc:
+        return _auth_error(
+            request,
+            "Token validation failed.",
+            f"{type(exc).__name__}: {exc}\n\n"
+            f"JWKS URL: {settings.keycloak_jwks_url}\n"
+            f"Expected issuer: {settings.keycloak_issuer_url}",
+        )
 
     # Store in session
     request.session["user"] = user_info.model_dump()
