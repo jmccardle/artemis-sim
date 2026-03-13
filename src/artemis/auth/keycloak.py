@@ -1,3 +1,5 @@
+import ssl
+
 import jwt
 from pydantic import BaseModel
 
@@ -25,10 +27,16 @@ class UserInfo(BaseModel):
 class KeycloakTokenValidator:
     def __init__(self) -> None:
         settings = get_settings()
+        ssl_context = None
+        if not settings.verify_ssl:
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
         self._jwks_client = jwt.PyJWKClient(
             settings.keycloak_jwks_url,
             cache_jwk_set=True,
             lifespan=300,
+            ssl_context=ssl_context,
         )
         self._issuer = settings.keycloak_issuer_url
         self._client_id = settings.keycloak_client_id

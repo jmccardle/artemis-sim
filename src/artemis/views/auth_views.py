@@ -50,7 +50,7 @@ async def auth_callback(request: Request, code: str, state: str):
         return RedirectResponse(url="/login", status_code=302)
 
     # Exchange code for tokens
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(verify=settings.verify_ssl) as client:
         token_response = await client.post(
             settings.keycloak_token_url,
             data={

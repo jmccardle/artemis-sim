@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     debug: bool = False
     base_url: str = "http://localhost:8000"
     cors_origins: str = ""  # comma-separated additional CORS origins
+    verify_ssl: bool = True  # set False for internal/enterprise CAs
 
     @property
     def keycloak_issuer_url(self) -> str:
