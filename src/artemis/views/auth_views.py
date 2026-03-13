@@ -69,15 +69,18 @@ async def auth_callback(request: Request, code: str, state: str):
 
     # Exchange code for tokens
     try:
+        token_data = {
+            "grant_type": "authorization_code",
+            "client_id": settings.keycloak_client_id,
+            "code": code,
+            "redirect_uri": f"{settings.base_url}/auth/callback",
+        }
+        if settings.keycloak_client_secret:
+            token_data["client_secret"] = settings.keycloak_client_secret
         async with httpx.AsyncClient(verify=settings.verify_ssl) as client:
             token_response = await client.post(
                 settings.keycloak_token_url,
-                data={
-                    "grant_type": "authorization_code",
-                    "client_id": settings.keycloak_client_id,
-                    "code": code,
-                    "redirect_uri": f"{settings.base_url}/auth/callback",
-                },
+                data=token_data,
             )
     except Exception as exc:
         return _auth_error(
