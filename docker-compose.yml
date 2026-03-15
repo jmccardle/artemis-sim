@@ -62,7 +62,7 @@ services:
   temporal-ui:
     image: temporalio/ui:latest
     ports:
-      - "8080:8080"
+      - "8081:8080"
     depends_on:
       - temporal
     environment:
@@ -93,9 +93,72 @@ services:
     networks:
       - artemis-network
 
+  # ── Application services ─────────────────────────────────
+
+  app:
+    build: .
+    ports:
+      - "8001:8000"
+    environment:
+      ARTEMIS_DATABASE_URL: postgresql+asyncpg://artemis:artemis@postgresql:5432/artemis
+      ARTEMIS_TEMPORAL_HOST: temporal:7233
+      ARTEMIS_AUTH_DISABLED: "true"
+      ARTEMIS_KEYCLOAK_URL: http://keycloak:8080
+      ARTEMIS_BASE_URL: http://localhost:8000
+      ARTEMIS_CORS_ORIGINS: http://localhost:5173
+      ARTEMIS_DEBUG: "true"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    networks:
+      - artemis-network
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn artemis.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./src:/app/src
+      - ./alembic:/app/alembic
+
+  worker:
+    build: .
+    environment:
+      ARTEMIS_DATABASE_URL: postgresql+asyncpg://artemis:artemis@postgresql:5432/artemis
+      ARTEMIS_TEMPORAL_HOST: temporal:7233
+      ARTEMIS_AUTH_DISABLED: "true"
+      ARTEMIS_DEBUG: "true"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    networks:
+      - artemis-network
+    command: ["python", "-m", "artemis.workers.main"]
+    volumes:
+      - ./src:/app/src
+
+  frontend:
+    image: node:22-slim
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+    command: sh -c "npm install && npm run dev"
+    environment:
+      API_PROXY_TARGET: http://app:8000
+    depends_on:
+      - app
+    networks:
+      - artemis-network
+
 volumes:
   postgres-data:
   temporal-postgres-data:
+  frontend-node-modules:
 
 networks:
   artemis-network:
