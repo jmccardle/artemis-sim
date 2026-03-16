@@ -15,12 +15,13 @@ with workflow.unsafe.imports_passed_through():
     from artemis.activities.persistence import (
         GetTasksByPhaseInput,
         UpdateTaskStatusInput,
+        complete_task_and_resolve,
         get_tasks_by_phase,
         update_task_status,
     )
 
 from artemis.workflows.clock import AdvanceTimeInput, CLOCK_WORKFLOW_ID
-from artemis.workflows.data_types import ReviewDecision
+from artemis.workflows.data_types import CompleteTaskAndResolveInput, ReviewDecision
 
 
 @dataclass
@@ -78,15 +79,23 @@ class LaunchReadinessWorkflow:
         await workflow.wait_condition(lambda: self._inspection_decision is not None)
 
         if inspection_task:
-            status = "COMPLETED" if self._inspection_decision.approved else "FAILED"
-            await workflow.execute_activity(
-                update_task_status,
-                UpdateTaskStatusInput(
-                    task_id=inspection_task.task_id,
-                    status=status,
-                ),
-                start_to_close_timeout=timedelta(seconds=10),
-            )
+            if self._inspection_decision.approved:
+                await workflow.execute_activity(
+                    complete_task_and_resolve,
+                    CompleteTaskAndResolveInput(
+                        task_id=inspection_task.task_id,
+                        mission_id=input.mission_id,
+                    ),
+                    start_to_close_timeout=timedelta(seconds=10),
+                )
+            else:
+                await workflow.execute_activity(
+                    update_task_status,
+                    UpdateTaskStatusInput(
+                        task_id=inspection_task.task_id, status="FAILED",
+                    ),
+                    start_to_close_timeout=timedelta(seconds=10),
+                )
             # Advance clock
             clock_handle = workflow.get_external_workflow_handle(CLOCK_WORKFLOW_ID)
             await clock_handle.signal(
@@ -116,15 +125,23 @@ class LaunchReadinessWorkflow:
         await workflow.wait_condition(lambda: self._readiness_decision is not None)
 
         if readiness_task:
-            status = "COMPLETED" if self._readiness_decision.approved else "FAILED"
-            await workflow.execute_activity(
-                update_task_status,
-                UpdateTaskStatusInput(
-                    task_id=readiness_task.task_id,
-                    status=status,
-                ),
-                start_to_close_timeout=timedelta(seconds=10),
-            )
+            if self._readiness_decision.approved:
+                await workflow.execute_activity(
+                    complete_task_and_resolve,
+                    CompleteTaskAndResolveInput(
+                        task_id=readiness_task.task_id,
+                        mission_id=input.mission_id,
+                    ),
+                    start_to_close_timeout=timedelta(seconds=10),
+                )
+            else:
+                await workflow.execute_activity(
+                    update_task_status,
+                    UpdateTaskStatusInput(
+                        task_id=readiness_task.task_id, status="FAILED",
+                    ),
+                    start_to_close_timeout=timedelta(seconds=10),
+                )
             clock_handle = workflow.get_external_workflow_handle(CLOCK_WORKFLOW_ID)
             await clock_handle.signal(
                 "advance_time",

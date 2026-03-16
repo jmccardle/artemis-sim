@@ -13,11 +13,10 @@ from temporalio import workflow
 with workflow.unsafe.imports_passed_through():
     from artemis.activities.persistence import (
         GetTasksByPhaseInput,
-        UpdateTaskStatusInput,
+        complete_task_and_resolve,
         get_contractors_by_specialty,
         get_tasks_by_phase,
         save_artifact,
-        update_task_status,
     )
     from artemis.activities.llm import (
         generate_proposal,
@@ -30,6 +29,7 @@ from artemis.workflows.data_types import (
     ORCHESTRATION_QUEUE,
     LLM_QUEUE,
     AwardDecision,
+    CompleteTaskAndResolveInput,
     ContractorInfo,
     EvaluateProposalInput,
     GenerateProposalInput,
@@ -216,8 +216,10 @@ class RFPWorkflow:
                 start_to_close_timeout=timedelta(seconds=10),
             )
             await workflow.execute_activity(
-                update_task_status,
-                UpdateTaskStatusInput(task_id=rfp_task.task_id, status="COMPLETED"),
+                complete_task_and_resolve,
+                CompleteTaskAndResolveInput(
+                    task_id=rfp_task.task_id, mission_id=input.mission_id,
+                ),
                 start_to_close_timeout=timedelta(seconds=10),
             )
 
@@ -290,8 +292,10 @@ class RFPWorkflow:
                 start_to_close_timeout=timedelta(seconds=10),
             )
             await workflow.execute_activity(
-                update_task_status,
-                UpdateTaskStatusInput(task_id=proposal_task.task_id, status="COMPLETED"),
+                complete_task_and_resolve,
+                CompleteTaskAndResolveInput(
+                    task_id=proposal_task.task_id, mission_id=input.mission_id,
+                ),
                 start_to_close_timeout=timedelta(seconds=10),
             )
 
@@ -323,8 +327,10 @@ class RFPWorkflow:
                 start_to_close_timeout=timedelta(seconds=10),
             )
             await workflow.execute_activity(
-                update_task_status,
-                UpdateTaskStatusInput(task_id=eval_task.task_id, status="COMPLETED"),
+                complete_task_and_resolve,
+                CompleteTaskAndResolveInput(
+                    task_id=eval_task.task_id, mission_id=input.mission_id,
+                ),
                 start_to_close_timeout=timedelta(seconds=10),
             )
 
@@ -335,8 +341,10 @@ class RFPWorkflow:
         award_task = _find_task("Award contract")
         if award_task:
             await workflow.execute_activity(
-                update_task_status,
-                UpdateTaskStatusInput(task_id=award_task.task_id, status="COMPLETED"),
+                complete_task_and_resolve,
+                CompleteTaskAndResolveInput(
+                    task_id=award_task.task_id, mission_id=input.mission_id,
+                ),
                 start_to_close_timeout=timedelta(seconds=10),
             )
 

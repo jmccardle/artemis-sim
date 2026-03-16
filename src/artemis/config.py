@@ -49,6 +49,13 @@ class Settings(BaseSettings):
     llm_base_url: str = ""
     llm_api_key: str = ""
 
+    # External system adapters
+    mes_provider: str = "mock"       # mock | solumina
+    cmms_provider: str = "mock"      # mock | maximo
+    hr_provider: str = "mock"        # mock | peoplesoft
+    inventory_provider: str = "mock" # mock | sap
+    qms_provider: str = "mock"       # mock | etq
+
     # App
     debug: bool = False
     base_url: str = "http://localhost:8000"

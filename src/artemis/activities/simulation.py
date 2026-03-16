@@ -39,3 +39,42 @@ async def run_inspection(input: RunInspectionInput) -> RunInspectionResult:
         passed=passed,
         details=details,
     )
+
+
+@dataclass
+class SimulateDurationInput:
+    task_id: str
+    task_name: str
+    nominal_duration_seconds: int
+    speed_factor: float = 1.0
+    difficulty_factor: float = 1.0
+
+
+@dataclass
+class SimulateDurationResult:
+    task_id: str
+    duration_seconds: int
+    nominal_seconds: int
+    escalated: bool = False
+    escalation_level: str = "none"
+
+
+@activity.defn
+async def simulate_task_duration(input: SimulateDurationInput) -> SimulateDurationResult:
+    """Simulate a variable task duration using lognormal model."""
+    from artemis.activities.delay_model import compute_actual_duration, get_escalation_level
+
+    actual = compute_actual_duration(
+        input.nominal_duration_seconds,
+        speed_factor=input.speed_factor,
+        difficulty_factor=input.difficulty_factor,
+    )
+    level = get_escalation_level(actual, input.nominal_duration_seconds)
+
+    return SimulateDurationResult(
+        task_id=input.task_id,
+        duration_seconds=actual,
+        nominal_seconds=input.nominal_duration_seconds,
+        escalated=level != "none",
+        escalation_level=level,
+    )

@@ -14,6 +14,7 @@ with workflow.unsafe.imports_passed_through():
     from artemis.activities.persistence import (
         GetTasksByPhaseInput,
         UpdateTaskStatusInput,
+        complete_task_and_resolve,
         get_tasks_by_phase,
         update_task_status,
     )
@@ -25,6 +26,7 @@ with workflow.unsafe.imports_passed_through():
 
 from artemis.workflows.data_types import (
     ORCHESTRATION_QUEUE,
+    CompleteTaskAndResolveInput,
     ComponentDeliveryUpdate,
     DeliveryResult,
     delivery_workflow_id,
@@ -150,8 +152,10 @@ class TransportWorkflow:
         for task in tasks:
             if task.name == f"Ship {input.component_name}":
                 await workflow.execute_activity(
-                    update_task_status,
-                    UpdateTaskStatusInput(task_id=task.task_id, status="COMPLETED"),
+                    complete_task_and_resolve,
+                    CompleteTaskAndResolveInput(
+                        task_id=task.task_id, mission_id=input.mission_id,
+                    ),
                     start_to_close_timeout=timedelta(seconds=10),
                 )
                 # Advance clock for shipping duration
@@ -172,8 +176,10 @@ class TransportWorkflow:
         for task in tasks:
             if task.name == f"Receive {input.component_name} at The Garage":
                 await workflow.execute_activity(
-                    update_task_status,
-                    UpdateTaskStatusInput(task_id=task.task_id, status="COMPLETED"),
+                    complete_task_and_resolve,
+                    CompleteTaskAndResolveInput(
+                        task_id=task.task_id, mission_id=input.mission_id,
+                    ),
                     start_to_close_timeout=timedelta(seconds=10),
                 )
                 clock_handle = workflow.get_external_workflow_handle(CLOCK_WORKFLOW_ID)
@@ -197,12 +203,20 @@ class TransportWorkflow:
                 )
                 self._inspection_passed = inspection.passed
 
-                new_status = "COMPLETED" if inspection.passed else "FAILED"
-                await workflow.execute_activity(
-                    update_task_status,
-                    UpdateTaskStatusInput(task_id=task.task_id, status=new_status),
-                    start_to_close_timeout=timedelta(seconds=10),
-                )
+                if inspection.passed:
+                    await workflow.execute_activity(
+                        complete_task_and_resolve,
+                        CompleteTaskAndResolveInput(
+                            task_id=task.task_id, mission_id=input.mission_id,
+                        ),
+                        start_to_close_timeout=timedelta(seconds=10),
+                    )
+                else:
+                    await workflow.execute_activity(
+                        update_task_status,
+                        UpdateTaskStatusInput(task_id=task.task_id, status="FAILED"),
+                        start_to_close_timeout=timedelta(seconds=10),
+                    )
 
                 clock_handle = workflow.get_external_workflow_handle(CLOCK_WORKFLOW_ID)
                 await clock_handle.signal(

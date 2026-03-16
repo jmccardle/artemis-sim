@@ -15,14 +15,30 @@ from artemis.activities.llm import (
     generate_test_report,
 )
 from artemis.activities.persistence import (
+    complete_task_and_resolve,
     create_mission_tasks,
+    create_rework_task,
     get_contractors_by_specialty,
     get_tasks_by_phase,
     save_artifact,
+    send_escalation,
     update_mission_status,
     update_task_status,
 )
-from artemis.activities.simulation import run_inspection
+from artemis.activities.external_systems import (
+    check_certification,
+    check_equipment_status,
+    check_material_cert,
+    check_pm_current,
+    create_ncr,
+    create_wad,
+    record_inspection_qms,
+    reserve_parts,
+    run_preflight_check,
+    sign_off_wad_step,
+    verify_labor_auth,
+)
+from artemis.activities.simulation import run_inspection, simulate_task_duration
 from artemis.config import get_settings
 from artemis.workflows.clock import SimulatedClockWorkflow
 from artemis.workflows.delivery import DeliveryWorkflow, TransportWorkflow
@@ -68,6 +84,23 @@ ALL_ACTIVITIES = [
     get_contractors_by_specialty,
     # Simulation
     run_inspection,
+    simulate_task_duration,
+    # Prerequisite resolution + rework + escalation
+    complete_task_and_resolve,
+    create_rework_task,
+    send_escalation,
+    # External system adapters
+    create_wad,
+    sign_off_wad_step,
+    check_equipment_status,
+    check_pm_current,
+    check_certification,
+    verify_labor_auth,
+    reserve_parts,
+    check_material_cert,
+    create_ncr,
+    record_inspection_qms,
+    run_preflight_check,
 ]
 
 

@@ -7,8 +7,13 @@ from dataclasses import dataclass, field
 from temporalio import activity
 
 from artemis.workflows.data_types import (
+    CompleteTaskAndResolveInput,
     ContractorInfo,
+    CreateReworkTaskInput,
+    CreateReworkTaskResult,
+    EscalationNotice,
     GetContractorsBySpecialtyInput,
+    ResolveResult,
     SaveArtifactInput,
 )
 
@@ -211,3 +216,146 @@ async def get_contractors_by_specialty(
             for c in all_contractors
             if isinstance(c.specialties, list) and input.specialty in c.specialties
         ]
+
+
+@activity.defn
+async def complete_task_and_resolve(
+    input: CompleteTaskAndResolveInput,
+) -> ResolveResult:
+    """Mark a task COMPLETED and resolve downstream prerequisites.
+
+    Combines update_task_status(COMPLETED) + resolve_prerequisites in a single
+    activity and DB session, ensuring prerequisite resolution is never skipped.
+    """
+    import uuid as uuid_mod
+
+    from sqlalchemy import select
+
+    from artemis.database import async_session_factory
+    from artemis.models.task import Task, TaskStatus
+    from artemis.services.scheduling import resolve_prerequisites_for_task
+
+    async with async_session_factory() as session:
+        # Mark the task as COMPLETED
+        result = await session.execute(
+            select(Task).where(Task.id == uuid_mod.UUID(input.task_id))
+        )
+        task = result.scalar_one()
+        task.status = TaskStatus.COMPLETED
+        if input.outputs:
+            task.outputs = input.outputs
+        await session.flush()
+
+        # Resolve downstream prerequisites
+        newly_available = await resolve_prerequisites_for_task(
+            session, input.task_id, input.mission_id
+        )
+
+        await session.commit()
+
+        return ResolveResult(
+            newly_available_task_ids=[str(t.id) for t in newly_available],
+            newly_available_task_names=[t.name for t in newly_available],
+        )
+
+
+@activity.defn
+async def create_rework_task(input: CreateReworkTaskInput) -> CreateReworkTaskResult:
+    """Create a rework task from a failed task.
+
+    Sets the original task status to REWORK and creates a new Task with
+    rework_of pointing back. The new task is immediately AVAILABLE.
+    """
+    import uuid as uuid_mod
+
+    from sqlalchemy import select
+
+    from artemis.database import async_session_factory
+    from artemis.models.task import Task, TaskStatus
+
+    async with async_session_factory() as session:
+        # Get original task
+        result = await session.execute(
+            select(Task).where(Task.id == uuid_mod.UUID(input.original_task_id))
+        )
+        original = result.scalar_one()
+
+        # Count existing rework generations
+        rework_count = 1
+        check_id = original.rework_of
+        while check_id is not None:
+            res = await session.execute(select(Task).where(Task.id == check_id))
+            parent = res.scalar_one_or_none()
+            if parent is None:
+                break
+            rework_count += 1
+            check_id = parent.rework_of
+
+        # Set original to REWORK
+        original.status = TaskStatus.REWORK
+
+        # Create new rework task
+        rework_name = f"{original.name} (rework {rework_count})"
+        rework_task = Task(
+            mission_id=original.mission_id,
+            phase=original.phase,
+            name=rework_name,
+            task_type=original.task_type,
+            status=TaskStatus.AVAILABLE,
+            assigned_role=original.assigned_role,
+            assigned_contractor=original.assigned_contractor,
+            facility=original.facility,
+            prerequisites=[],  # Rework tasks are immediately actionable
+            nominal_duration_seconds=original.nominal_duration_seconds,
+            failure_probability=original.failure_probability,
+            rework_of=original.id,
+            inputs={"rework_reason": input.reason},
+        )
+        session.add(rework_task)
+        await session.flush()
+
+        new_task_id = str(rework_task.id)
+        await session.commit()
+
+        return CreateReworkTaskResult(
+            new_task_id=new_task_id,
+            original_task_id=input.original_task_id,
+            new_task_name=rework_name,
+        )
+
+
+@activity.defn
+async def send_escalation(input: EscalationNotice) -> None:
+    """Record an escalation in the task outputs and create an artifact."""
+    import uuid as uuid_mod
+
+    from sqlalchemy import select
+
+    from artemis.database import async_session_factory
+    from artemis.models.artifact import TaskArtifact
+    from artemis.models.task import Task
+
+    async with async_session_factory() as session:
+        # Update task outputs with escalation info
+        result = await session.execute(
+            select(Task).where(Task.id == uuid_mod.UUID(input.task_id))
+        )
+        task = result.scalar_one()
+        outputs = dict(task.outputs) if task.outputs else {}
+        outputs["escalation_level"] = input.escalation_level
+        outputs["escalation_message"] = input.message
+        task.outputs = outputs
+
+        # Create escalation artifact
+        artifact = TaskArtifact(
+            task_id=task.id,
+            artifact_type="ESCALATION_NOTICE",
+            content={
+                "level": input.escalation_level,
+                "message": input.message,
+                "expected_seconds": input.expected_seconds,
+                "actual_seconds": input.actual_seconds,
+            },
+        )
+        session.add(artifact)
+        await session.commit()

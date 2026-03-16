@@ -197,3 +197,67 @@ class BudgetSummary(BaseModel):
     by_mission: dict[str, float] = {}
     by_contractor: dict[str, float] = {}
     invoice_count: int = 0
+
+
+# --- Scheduling ---
+
+class AvailableWorkResponse(BaseModel):
+    task_id: str
+    mission_id: str
+    name: str
+    phase: str
+    task_type: str
+    assigned_role: str
+    assigned_contractor: str = ""
+    facility: str = ""
+    nominal_duration_seconds: int = 0
+    downstream_task_count: int = 0
+    downstream_duration_seconds: int = 0
+    on_critical_path: bool = False
+    unblocks: list[str] = []
+
+
+class BlockerInfoResponse(BaseModel):
+    task_id: str
+    name: str
+    status: str
+    assigned_role: str
+    nominal_duration_seconds: int = 0
+
+
+class BlockedTaskInfoResponse(BaseModel):
+    task_id: str
+    name: str
+    status: str
+    other_prerequisites_met: bool = False
+
+
+class BlockingAnalysisResponse(BaseModel):
+    task_id: str
+    task_name: str
+    task_status: str
+    blocked_by: list[BlockerInfoResponse] = []
+    blocks_tasks: list[BlockedTaskInfoResponse] = []
+    estimated_unblock_seconds: int = 0
+    total_downstream_impact_seconds: int = 0
+
+
+class CriticalPathTaskResponse(BaseModel):
+    task_id: str
+    name: str
+    phase: str
+    status: str
+    nominal_duration_seconds: int = 0
+    position_in_path: int = 0
+    cumulative_duration_seconds: int = 0
+
+
+class CriticalPathResponse(BaseModel):
+    total_duration_seconds: int = 0
+    tasks_on_path: list[CriticalPathTaskResponse] = []
+    current_delay_seconds: int = 0
+
+
+class WorkSuggestionsResponse(BaseModel):
+    available_same_mission: list[AvailableWorkResponse] = []
+    available_other_missions: list[AvailableWorkResponse] = []

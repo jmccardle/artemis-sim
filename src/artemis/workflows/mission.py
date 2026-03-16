@@ -64,6 +64,11 @@ ESTES_INTEGRATION_STEPS = [
         nominal_duration_seconds=7200,
         failure_probability=0.10,
         output_component="BodyAndFins",
+        # Preflight: verify adhesive cert and work surface calibration
+        required_certs=["NASA-STD-5009"],
+        equipment_ids=["GARAGE-BENCH-01"],
+        part_numbers=["ESTES-ADH-001"],
+        wbs_element="1.04.01.01",
     ),
     IntegrationStepSpec(
         name="Install solid motor",
@@ -72,6 +77,9 @@ ESTES_INTEGRATION_STEPS = [
         nominal_duration_seconds=3600,
         failure_probability=0.05,
         output_component="",
+        required_certs=["confined_space"],
+        part_numbers=["ESTES-PROP-001"],
+        wbs_element="1.04.01.02",
     ),
     IntegrationStepSpec(
         name="Install parachute",
@@ -80,6 +88,7 @@ ESTES_INTEGRATION_STEPS = [
         nominal_duration_seconds=1800,
         failure_probability=0.02,
         output_component="",
+        wbs_element="1.04.01.03",
     ),
 ]
 
@@ -191,9 +200,10 @@ class MissionWorkflow:
         self._phase_complete = False
 
         integration_steps = ESTES_INTEGRATION_STEPS if architecture_name == "estes" else []
-        # Workflow ID for integration uses mission_id (single integration per mission)
         integration_wf_id = f"integration-{mission_id}"
-        await workflow.execute_child_workflow(
+
+        from artemis.workflows.integration import IntegrationOutput
+        integration_result: IntegrationOutput = await workflow.execute_child_workflow(
             IntegrationWorkflow.run,
             IntegrationInput(
                 mission_id=mission_id,
@@ -204,6 +214,19 @@ class MissionWorkflow:
             id=integration_wf_id,
             task_queue=ORCHESTRATION_QUEUE,
         )
+
+        if not integration_result.success:
+            self._status = "FAILED"
+            await workflow.execute_activity(
+                update_mission_status,
+                UpdateMissionStatusInput(mission_id=mission_id, status="FAILED"),
+                start_to_close_timeout=timedelta(seconds=10),
+            )
+            return (
+                f"Mission {self._name} failed during integration: "
+                f"{integration_result.failure_reason}"
+            )
+
         self._phase_complete = True
         self._progress_pct = 75.0
 
@@ -211,12 +234,26 @@ class MissionWorkflow:
         self._phase = MissionPhase.LAUNCH_READINESS
         self._phase_complete = False
 
-        await workflow.execute_child_workflow(
+        from artemis.workflows.launch_readiness import LaunchReadinessOutput
+        lr_result: LaunchReadinessOutput = await workflow.execute_child_workflow(
             LaunchReadinessWorkflow.run,
             LaunchReadinessInput(mission_id=mission_id),
             id=launch_readiness_workflow_id(mission_id),
             task_queue=ORCHESTRATION_QUEUE,
         )
+
+        if not lr_result.approved:
+            self._status = "FAILED"
+            await workflow.execute_activity(
+                update_mission_status,
+                UpdateMissionStatusInput(mission_id=mission_id, status="FAILED"),
+                start_to_close_timeout=timedelta(seconds=10),
+            )
+            return (
+                f"Mission {self._name} failed launch readiness: "
+                f"{lr_result.rejection_reason}"
+            )
+
         self._phase_complete = True
         self._progress_pct = 100.0
 

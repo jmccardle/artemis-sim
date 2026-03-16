@@ -8,7 +8,7 @@ from sqlalchemy import text
 from starlette.middleware.sessions import SessionMiddleware
 from temporalio.client import Client
 
-from artemis.api import admin, clock, contractors, facilities, invoices, missions, tasks
+from artemis.api import admin, clock, contractors, facilities, invoices, missions, scheduling, tasks
 from artemis.config import get_settings
 from artemis.database import engine
 from artemis.events import event_bus
@@ -131,6 +131,7 @@ app.include_router(facilities.router, prefix="/api/v1/facilities", tags=["facili
 app.include_router(clock.router, prefix="/api/v1/clock", tags=["clock"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(invoices.router, prefix="/api/v1", tags=["invoices"])
+app.include_router(scheduling.router, prefix="/api/v1", tags=["scheduling"])
 
 # Browser view routes
 from artemis.views import register_view_routes  # noqa: E402

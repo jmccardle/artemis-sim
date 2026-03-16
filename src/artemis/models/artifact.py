@@ -18,6 +18,10 @@ class ArtifactType(str, enum.Enum):
     FAILURE_REPORT = "FAILURE_REPORT"
     INVOICE = "INVOICE"
     WORK_REPORT = "WORK_REPORT"
+    PREFLIGHT_REPORT = "PREFLIGHT_REPORT"
+    ESCALATION_NOTICE = "ESCALATION_NOTICE"
+    NCR = "NCR"
+    WAD = "WAD"
 
 
 class TaskArtifact(Base):

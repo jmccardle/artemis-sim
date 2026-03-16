@@ -106,6 +106,11 @@ class IntegrationStepSpec:
     nominal_duration_seconds: int = 0
     failure_probability: float = 0.0
     output_component: str = ""
+    # Preflight check requirements (optional — empty = no preflight)
+    required_certs: list[str] = field(default_factory=list)
+    equipment_ids: list[str] = field(default_factory=list)
+    part_numbers: list[str] = field(default_factory=list)
+    wbs_element: str = ""
 
 
 @dataclass
@@ -374,6 +379,54 @@ class LLMResult:
     metadata: dict[str, str] = field(default_factory=dict)
 
 
+# ── Prerequisite Resolution ─────────────────────────────────────────
+
+@dataclass
+class CompleteTaskAndResolveInput:
+    """Input for the combined complete + resolve-prerequisites activity."""
+    task_id: str
+    mission_id: str
+    outputs: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class ResolveResult:
+    """Result of prerequisite resolution after a task completes."""
+    newly_available_task_ids: list[str] = field(default_factory=list)
+    newly_available_task_names: list[str] = field(default_factory=list)
+
+
+# ── Rework ──────────────────────────────────────────────────────────
+
+@dataclass
+class CreateReworkTaskInput:
+    """Input for creating a rework task from a failed task."""
+    original_task_id: str
+    mission_id: str
+    reason: str
+
+
+@dataclass
+class CreateReworkTaskResult:
+    new_task_id: str
+    original_task_id: str
+    new_task_name: str
+
+
+# ── Escalation ──────────────────────────────────────────────────────
+
+@dataclass
+class EscalationNotice:
+    """Notification when a task exceeds expected duration or needs attention."""
+    task_id: str
+    task_name: str
+    mission_id: str
+    expected_seconds: int
+    actual_seconds: int
+    escalation_level: str  # "warning" (1.5x), "critical" (2x), "halt" (3x)
+    message: str
+
+
 # ── Simulation Activity Types ───────────────────────────────────────
 
 @dataclass
@@ -390,3 +443,4 @@ class SimulateTaskResult:
     passed: bool
     duration_seconds: int
     details: str = ""
+    escalated: bool = False
