@@ -3,6 +3,7 @@ import { listMissions } from '../api/missions';
 import { getAllTasks, getArtifacts, completeTask, failTask, type Task, type Artifact } from '../api/tasks';
 import { StatusBadge } from '../components/StatusBadge';
 import { ArtifactViewer } from '../components/ArtifactViewer';
+import { PriorityWorkQueue } from '../components/PriorityWorkQueue';
 import { addToast, lastTaskEvent } from '../api/sse';
 
 export const TechAuthority: Component = () => {
@@ -64,6 +65,13 @@ export const TechAuthority: Component = () => {
       <div class="page-header">
         <h1 class="page-title">Technical Review Queue</h1>
       </div>
+
+      <Show when={missions() && missions()!.length > 0}>
+        <PriorityWorkQueue
+          missions={missions()!}
+          role="nasa-tech-authority"
+        />
+      </Show>
 
       <div class="panel" style={{ 'margin-bottom': 'var(--sp-4)' }}>
         <h2 class="panel-title">Pending Review ({pendingReview().length})</h2>

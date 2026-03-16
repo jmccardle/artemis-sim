@@ -25,6 +25,12 @@ export const KanbanCard: Component<Props> = (props) => {
         </Show>
       </div>
 
+      <Show when={t().status === 'NOT_READY' && t().prerequisites.length > 0}>
+        <div class="kanban-card-blocked dim">
+          Blocked by {t().prerequisites.length} task{t().prerequisites.length !== 1 ? 's' : ''}
+        </div>
+      </Show>
+
       <Show when={props.onAction && (t().status === 'AVAILABLE' || t().status === 'IN_PROGRESS' || t().status === 'NOT_READY')}>
         <div class="kanban-card-actions" onClick={(e) => e.stopPropagation()}>
           <Show when={t().status === 'NOT_READY'}>

@@ -3,6 +3,7 @@ import { listMissions } from '../api/missions';
 import { getAllTasks, completeTask, failTask, advanceTask, type Task } from '../api/tasks';
 import { KanbanBoard } from '../components/kanban/KanbanBoard';
 import { TaskDetailModal } from '../components/TaskDetailModal';
+import { PriorityWorkQueue } from '../components/PriorityWorkQueue';
 import { addToast, lastTaskEvent } from '../api/sse';
 
 export const ContractorPM: Component = () => {
@@ -31,6 +32,18 @@ export const ContractorPM: Component = () => {
       <div class="page-header">
         <h1 class="page-title">Contractor PM Dashboard</h1>
       </div>
+
+      <Show when={missions() && missions()!.length > 0}>
+        <PriorityWorkQueue
+          missions={missions()!}
+          role="contractor-pm"
+          onTaskClick={(id) => {
+            const t = tasks()?.find(task => task.id === id);
+            if (t) setSelectedTask(t);
+          }}
+          onComplete={(id) => handleAction(id, 'complete')}
+        />
+      </Show>
 
       <Show when={!tasks.loading} fallback={
         <div class="skeleton" style={{ height: '300px', width: '100%' }} />

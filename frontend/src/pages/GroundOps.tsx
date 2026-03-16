@@ -1,10 +1,12 @@
-import { Component, createResource, Show, For, createEffect } from 'solid-js';
+import { Component, createResource, createSignal, Show, For, createEffect } from 'solid-js';
 import { listFacilities } from '../api/facilities';
 import { listMissions } from '../api/missions';
-import { getAllTasks, type Task } from '../api/tasks';
+import { getAllTasks, completeTask, failTask, advanceTask, type Task } from '../api/tasks';
 import { FacilityCard } from '../components/FacilityCard';
 import { StatusBadge } from '../components/StatusBadge';
-import { lastFacilityEvent, lastTaskEvent } from '../api/sse';
+import { TaskDetailModal } from '../components/TaskDetailModal';
+import { PriorityWorkQueue } from '../components/PriorityWorkQueue';
+import { addToast, lastFacilityEvent, lastTaskEvent } from '../api/sse';
 
 export const GroundOps: Component = () => {
   const [facilities, { refetch: refetchFacilities }] = createResource(listFacilities);
@@ -13,9 +15,21 @@ export const GroundOps: Component = () => {
     () => missions(),
     (m) => m ? getAllTasks(m, { phase: 'DELIVERY' }) : Promise.resolve([]),
   );
+  const [selectedTask, setSelectedTask] = createSignal<Task | null>(null);
 
   createEffect(() => { if (lastFacilityEvent()) refetchFacilities(); });
   createEffect(() => { if (lastTaskEvent()) refetchTasks(); });
+
+  const handleAction = async (taskId: string, action: 'complete' | 'fail' | 'advance') => {
+    try {
+      const fn = { complete: completeTask, fail: failTask, advance: advanceTask }[action];
+      await fn(taskId);
+      addToast(`Task ${action}d`, 'success');
+      refetchTasks();
+    } catch (err: any) {
+      addToast(err.message || 'Action failed', 'error');
+    }
+  };
 
   const incomingShipments = () => (deliveryTasks() || []).filter(
     t => t.status === 'IN_PROGRESS' || t.status === 'AVAILABLE',
@@ -26,6 +40,18 @@ export const GroundOps: Component = () => {
       <div class="page-header">
         <h1 class="page-title">Ground Operations</h1>
       </div>
+
+      <Show when={missions() && missions()!.length > 0}>
+        <PriorityWorkQueue
+          missions={missions()!}
+          role="egs-ground-ops"
+          onTaskClick={(id) => {
+            const t = deliveryTasks()?.find(task => task.id === id);
+            if (t) setSelectedTask(t);
+          }}
+          onComplete={(id) => handleAction(id, 'complete')}
+        />
+      </Show>
 
       {/* Facilities */}
       <div class="panel" style={{ 'margin-bottom': 'var(--sp-4)' }}>
@@ -64,7 +90,7 @@ export const GroundOps: Component = () => {
             <tbody>
               <For each={incomingShipments()}>
                 {(task) => (
-                  <tr>
+                  <tr onClick={() => setSelectedTask(task)} style={{ cursor: 'pointer' }}>
                     <td>{task.name}</td>
                     <td><StatusBadge status={task.status} /></td>
                     <td>{task.assigned_contractor || '—'}</td>
@@ -77,6 +103,13 @@ export const GroundOps: Component = () => {
           </table>
         </Show>
       </div>
+      <Show when={selectedTask()}>
+        <TaskDetailModal
+          task={selectedTask()!}
+          onClose={() => setSelectedTask(null)}
+          onTaskUpdated={() => refetchTasks()}
+        />
+      </Show>
     </div>
   );
 };

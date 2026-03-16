@@ -1,10 +1,12 @@
-import { Component, createResource, Show, For, createEffect } from 'solid-js';
+import { Component, createResource, createSignal, Show, For, createEffect } from 'solid-js';
 import { listContractors } from '../api/contractors';
 import { getBudget, type BudgetSummary } from '../api/invoices';
 import { listMissions } from '../api/missions';
-import { getAllTasks, type Task } from '../api/tasks';
+import { getAllTasks, completeTask, failTask, advanceTask, type Task } from '../api/tasks';
 import { StatusBadge } from '../components/StatusBadge';
-import { lastTaskEvent } from '../api/sse';
+import { TaskDetailModal } from '../components/TaskDetailModal';
+import { PriorityWorkQueue } from '../components/PriorityWorkQueue';
+import { addToast, lastTaskEvent } from '../api/sse';
 
 export const ContractsOfficer: Component = () => {
   const [contractors] = createResource(listContractors);
@@ -14,8 +16,20 @@ export const ContractsOfficer: Component = () => {
     () => missions(),
     (m) => m ? getAllTasks(m, { assigned_role: 'nasa-contracts-officer' }) : Promise.resolve([]),
   );
+  const [selectedTask, setSelectedTask] = createSignal<Task | null>(null);
 
   createEffect(() => { if (lastTaskEvent()) refetch(); });
+
+  const handleAction = async (taskId: string, action: 'complete' | 'fail' | 'advance') => {
+    try {
+      const fn = { complete: completeTask, fail: failTask, advance: advanceTask }[action];
+      await fn(taskId);
+      addToast(`Task ${action}d`, 'success');
+      refetch();
+    } catch (err: any) {
+      addToast(err.message || 'Action failed', 'error');
+    }
+  };
 
   const formatCurrency = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -24,6 +38,18 @@ export const ContractsOfficer: Component = () => {
       <div class="page-header">
         <h1 class="page-title">Contracts & Budget</h1>
       </div>
+
+      <Show when={missions() && missions()!.length > 0}>
+        <PriorityWorkQueue
+          missions={missions()!}
+          role="nasa-contracts-officer"
+          onTaskClick={(id) => {
+            const t = contractTasks()?.find(task => task.id === id);
+            if (t) setSelectedTask(t);
+          }}
+          onComplete={(id) => handleAction(id, 'complete')}
+        />
+      </Show>
 
       {/* Budget summary */}
       <Show when={budget()}>
@@ -105,7 +131,7 @@ export const ContractsOfficer: Component = () => {
               <tbody>
                 <For each={contractTasks()}>
                   {(task) => (
-                    <tr>
+                    <tr onClick={() => setSelectedTask(task)} style={{ cursor: 'pointer' }}>
                       <td>{task.name}</td>
                       <td class="col-mono">{task.phase}</td>
                       <td><StatusBadge status={task.status} /></td>
@@ -117,6 +143,13 @@ export const ContractsOfficer: Component = () => {
             </table>
           </Show>
         </div>
+      </Show>
+      <Show when={selectedTask()}>
+        <TaskDetailModal
+          task={selectedTask()!}
+          onClose={() => setSelectedTask(null)}
+          onTaskUpdated={() => refetch()}
+        />
       </Show>
     </div>
   );

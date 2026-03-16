@@ -5,6 +5,8 @@ import { ProgressBars } from '../components/ProgressBars';
 import { GanttChart } from '../components/GanttChart';
 import { StatusBadge } from '../components/StatusBadge';
 import { TaskDetailModal } from '../components/TaskDetailModal';
+import { PriorityWorkQueue } from '../components/PriorityWorkQueue';
+import { CriticalPathBar } from '../components/CriticalPathBar';
 import { lastMissionEvent, lastTaskEvent } from '../api/sse';
 
 export const ProgramManager: Component = () => {
@@ -47,6 +49,17 @@ export const ProgramManager: Component = () => {
         </Show>
       </div>
 
+      {/* Priority Work Queue — PM sees all roles */}
+      <Show when={missions() && missions()!.length > 0}>
+        <PriorityWorkQueue
+          missions={missions()!}
+          onTaskClick={(id) => {
+            const t = tasks()?.find(task => task.id === id);
+            if (t) setSelectedTask(t);
+          }}
+        />
+      </Show>
+
       {/* Mission cards overview */}
       <Show when={missions()}>
         <div class="mission-cards-grid">
@@ -78,6 +91,11 @@ export const ProgramManager: Component = () => {
           <h2 class="panel-title">Timeline</h2>
           <GanttChart tasks={tasks()!} />
         </div>
+      </Show>
+
+      {/* Critical Path for selected mission */}
+      <Show when={selectedMissionId()}>
+        <CriticalPathBar missionId={selectedMissionId()!} />
       </Show>
 
       <Show when={tasks.loading}>
