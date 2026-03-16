@@ -1,0 +1,45 @@
+<div class="blocking-detail">
+  {% if analysis.blocked_by %}
+  <p class="small fw-bold mb-1">Blocked by:</p>
+  <div class="list-group list-group-flush small mb-2">
+    {% for blocker in analysis.blocked_by %}
+    <div class="list-group-item py-1 d-flex justify-content-between align-items-center">
+      <span>
+        <a href="#" onclick="openTaskModal('{{ blocker.task_id }}'); return false;">{{ blocker.name }}</a>
+        <span class="text-muted ms-1">({{ blocker.assigned_role }})</span>
+      </span>
+      <span class="badge bg-status-{{ blocker.status }}">{{ blocker.status }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if analysis.blocks_tasks %}
+  <p class="small fw-bold mb-1">Blocks:</p>
+  <div class="list-group list-group-flush small mb-2">
+    {% for blocked in analysis.blocks_tasks %}
+    <div class="list-group-item py-1 d-flex justify-content-between align-items-center">
+      <span>
+        <a href="#" onclick="openTaskModal('{{ blocked.task_id }}'); return false;">{{ blocked.name }}</a>
+      </span>
+      <div>
+        <span class="badge bg-status-{{ blocked.status }}">{{ blocked.status }}</span>
+        {% if blocked.other_prerequisites_met %}
+        <span class="badge bg-success ms-1">Ready if this completes</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if not analysis.blocked_by and not analysis.blocks_tasks %}
+  <p class="text-muted small mb-0">No dependency information available.</p>
+  {% endif %}
+
+  {% if analysis.total_downstream_impact_seconds > 0 %}
+  <small class="text-muted">
+    Downstream impact: {{ (analysis.total_downstream_impact_seconds / 3600) | round(1) }}h across dependent tasks
+  </small>
+  {% endif %}
+</div>

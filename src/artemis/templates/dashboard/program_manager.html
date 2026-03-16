@@ -16,6 +16,30 @@
 <h5 class="mb-3"><i class="bi bi-bar-chart"></i> Mission Progress</h5>
 {% include "partials/mission/progress_bars.html" %}
 
+<!-- Critical Path -->
+{% if missions %}
+<h5 class="mt-4 mb-3"><i class="bi bi-signpost-split"></i> Critical Path</h5>
+{% for mission in missions %}
+<div hx-get="/views/missions/{{ mission.id }}/critical-path"
+     hx-trigger="load, sse:task-updated"
+     hx-swap="innerHTML"
+     class="mb-3">
+    <p class="text-muted small">Loading critical path...</p>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Priority Work -->
+{% if missions %}
+<h5 class="mt-4 mb-3"><i class="bi bi-lightning"></i> Priority Work</h5>
+<div id="available-work"
+     hx-get="/views/missions/{{ missions[0].id }}/available-work"
+     hx-trigger="load, sse:task-updated"
+     hx-swap="innerHTML">
+    <p class="text-muted small">Loading...</p>
+</div>
+{% endif %}
+
 <!-- Gantt Chart -->
 {% if missions %}
 <h5 class="mt-4 mb-3"><i class="bi bi-calendar-range"></i> Mission Timeline</h5>

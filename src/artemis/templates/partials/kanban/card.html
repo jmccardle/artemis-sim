@@ -1,5 +1,10 @@
 <div class="kanban-card" onclick="openTaskModal('{{ task.id }}')">
     <div class="card-title">{{ task.name }}</div>
+    {% if task.status == 'NOT_READY' and blocked_count is defined and blocked_count > 0 %}
+    <div class="card-blocked small text-muted">
+        <i class="bi bi-lock"></i> Waiting on {{ blocked_count }} task{{ 's' if blocked_count != 1 }}
+    </div>
+    {% endif %}
     <div class="card-meta">
         <span class="badge bg-phase-{{ task.phase }}">{{ task.phase | replace('_', ' ') }}</span>
         {% if task.assigned_contractor %}

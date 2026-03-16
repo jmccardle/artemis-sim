@@ -1,0 +1,32 @@
+<div class="work-suggestions mt-2">
+  {% if suggestions.available_same_mission %}
+  <p class="small fw-bold mb-1">Available in this mission:</p>
+  <div class="list-group list-group-flush small">
+    {% for item in suggestions.available_same_mission[:5] %}
+    <a class="list-group-item list-group-item-action py-1"
+       href="#" onclick="openTaskModal('{{ item.task_id }}'); return false;">
+      {{ item.name }}
+      <span class="badge bg-phase-{{ item.phase }} ms-1">{{ item.phase | replace('_', ' ') }}</span>
+      {% if item.on_critical_path %}<span class="badge bg-danger ms-1">CP</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if suggestions.available_other_missions %}
+  <p class="small fw-bold mb-1 mt-2">Available in other missions:</p>
+  <div class="list-group list-group-flush small">
+    {% for item in suggestions.available_other_missions[:3] %}
+    <a class="list-group-item list-group-item-action py-1"
+       href="#" onclick="openTaskModal('{{ item.task_id }}'); return false;">
+      {{ item.name }}
+      <span class="badge bg-phase-{{ item.phase }} ms-1">{{ item.phase | replace('_', ' ') }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if not suggestions.available_same_mission and not suggestions.available_other_missions %}
+  <p class="text-muted small mb-0">No alternative work available right now.</p>
+  {% endif %}
+</div>

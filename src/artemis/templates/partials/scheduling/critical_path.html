@@ -1,0 +1,28 @@
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between mb-2">
+      <span><strong>Critical Path</strong></span>
+      <span class="text-muted small">
+        {{ (critical_path.total_duration_seconds / 3600) | round(1) }}h total
+        {% if critical_path.current_delay_seconds > 0 %}
+        &middot; <span class="text-danger">{{ (critical_path.current_delay_seconds / 3600) | round(1) }}h delayed</span>
+        {% endif %}
+      </span>
+    </div>
+    {% if critical_path.tasks_on_path %}
+    <div class="progress" style="height: 24px;">
+      {% for t in critical_path.tasks_on_path %}
+      {% set pct = (t.nominal_duration_seconds / critical_path.total_duration_seconds * 100) | round(1) if critical_path.total_duration_seconds > 0 else 0 %}
+      <div class="progress-bar {% if t.status == 'COMPLETED' %}bg-success{% elif t.status == 'IN_PROGRESS' %}bg-warning progress-bar-striped progress-bar-animated{% elif t.status == 'FAILED' %}bg-danger{% else %}bg-secondary{% endif %}"
+           style="width: {{ pct }}%"
+           data-bs-toggle="tooltip"
+           title="{{ t.name }} ({{ t.phase | replace('_', ' ') }})">
+        {% if pct > 8 %}{{ t.name | truncate(15) }}{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted small mb-0">No tasks in critical path.</p>
+    {% endif %}
+  </div>
+</div>

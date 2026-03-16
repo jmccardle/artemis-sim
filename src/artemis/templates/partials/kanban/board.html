@@ -2,6 +2,7 @@
 
 <div class="kanban-board" id="kanban-board">
     {% set statuses = [("NOT_READY", "Not Ready"), ("AVAILABLE", "Available"), ("IN_PROGRESS", "In Progress"), ("COMPLETED", "Completed")] %}
+    {% set completed_ids = tasks | selectattr("status", "equalto", "COMPLETED") | map(attribute="id") | map("string") | list %}
 
     {% for status_key, status_label in statuses %}
     {% set column_tasks = tasks | selectattr("status", "equalto", status_key) | list %}
@@ -12,7 +13,9 @@
         </div>
         <div class="kanban-cards">
             {% for task in column_tasks %}
+            {% with blocked_count = (task.prerequisites | reject("in", completed_ids) | list | length) if task.status == 'NOT_READY' and task.prerequisites else 0 %}
             {% include "partials/kanban/card.html" %}
+            {% endwith %}
             {% endfor %}
             {% if not column_tasks %}
             <div class="text-muted text-center small py-3">No tasks</div>

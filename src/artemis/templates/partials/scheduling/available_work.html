@@ -1,0 +1,27 @@
+<div id="available-work-panel">
+  {% if available_work %}
+  <div class="list-group list-group-flush">
+    {% for item in available_work %}
+    <div class="list-group-item list-group-item-action"
+         onclick="openTaskModal('{{ item.task_id }}')"
+         style="cursor: pointer;">
+      <div class="d-flex justify-content-between">
+        <strong>{{ item.name }}</strong>
+        <div>
+          {% if item.on_critical_path %}
+          <span class="badge bg-danger">Critical Path</span>
+          {% endif %}
+          <span class="badge bg-info">Unblocks {{ item.downstream_task_count }}</span>
+        </div>
+      </div>
+      <small class="text-muted">
+        <span class="badge bg-phase-{{ item.phase }}">{{ item.phase | replace('_', ' ') }}</span>
+        {% if item.unblocks %}Enables: {{ item.unblocks | join(', ') }}{% endif %}
+      </small>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-muted small mb-0">No tasks available — all prerequisites pending.</p>
+  {% endif %}
+</div>

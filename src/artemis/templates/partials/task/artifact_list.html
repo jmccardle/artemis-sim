@@ -4,7 +4,7 @@
     <div class="list-group-item px-0">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <span class="badge {% if artifact.artifact_type in ['SCORECARD', 'RUBRIC'] %}bg-info{% elif artifact.artifact_type == 'FAILURE_REPORT' %}bg-danger{% elif artifact.artifact_type == 'TEST_REPORT' %}bg-success{% else %}bg-secondary{% endif %}">
+                <span class="badge {% if artifact.artifact_type in ['SCORECARD', 'RUBRIC'] %}bg-info{% elif artifact.artifact_type == 'FAILURE_REPORT' %}bg-danger{% elif artifact.artifact_type == 'TEST_REPORT' %}bg-success{% elif artifact.artifact_type == 'PREFLIGHT_REPORT' %}bg-primary{% elif artifact.artifact_type == 'NCR' %}bg-danger{% elif artifact.artifact_type == 'WAD' %}bg-dark{% elif artifact.artifact_type == 'ESCALATION_NOTICE' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
                     {{ artifact.artifact_type | replace('_', ' ') }}
                 </span>
                 <small class="text-muted ms-2">{{ artifact.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
@@ -51,6 +51,96 @@
             {% elif artifact.content.get('rubric') %}
                 {# Rubric JSON — show formatted #}
                 <pre class="p-2 bg-light rounded small" style="max-height: 300px; overflow-y: auto;">{{ artifact.content.rubric }}</pre>
+            {% elif artifact.content.get('ready') is not none and artifact.artifact_type == 'PREFLIGHT_REPORT' %}
+                {# Preflight report — checklist with pass/fail badges #}
+                {% if not artifact.content.ready %}
+                <div class="alert alert-danger py-2 small mb-2">
+                    <i class="bi bi-exclamation-triangle"></i> <strong>NOT READY</strong>
+                    {% if artifact.content.get('blocking_reasons') %}
+                    <ul class="mb-0 mt-1">
+                        {% for reason in artifact.content.blocking_reasons %}
+                        <li>{{ reason }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="alert alert-success py-2 small mb-2">
+                    <i class="bi bi-check-circle"></i> <strong>READY FOR LAUNCH</strong>
+                </div>
+                {% endif %}
+                {% if artifact.content.get('wad_number') %}
+                <small class="text-muted d-block mb-2">WAD Ref: {{ artifact.content.wad_number }}</small>
+                {% endif %}
+                {% if artifact.content.get('checks') %}
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>System</th><th>Check</th><th>Result</th><th>Detail</th></tr></thead>
+                    <tbody>
+                    {% for check in artifact.content.checks %}
+                    <tr>
+                        <td><span class="badge bg-secondary">{{ check.system | default('—') }}</span></td>
+                        <td>{{ check.check_type | default('—') }}</td>
+                        <td><span class="badge {% if check.passed %}bg-success{% else %}bg-danger{% endif %}">{% if check.passed %}PASS{% else %}FAIL{% endif %}</span></td>
+                        <td class="small">{{ check.detail | default('—') }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            {% elif artifact.content.get('ncr_number') and artifact.artifact_type == 'NCR' %}
+                {# Non-Conformance Report #}
+                {% set severity = artifact.content.get('severity', 'minor') %}
+                <div class="alert {% if severity == 'critical' %}alert-danger{% elif severity == 'major' %}alert-warning{% else %}alert-warning{% endif %} py-2 small mb-0">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>{{ artifact.content.ncr_number }}</strong>
+                        <span class="badge {% if severity == 'critical' %}bg-danger{% elif severity == 'major' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ severity | upper }}</span>
+                    </div>
+                    {% if artifact.content.get('description') %}
+                    <p class="mb-1">{{ artifact.content.description }}</p>
+                    {% endif %}
+                    {% if artifact.content.get('status') %}
+                    <span class="badge bg-info">{{ artifact.content.status }}</span>
+                    {% endif %}
+                </div>
+            {% elif artifact.content.get('wad_number') and artifact.artifact_type == 'WAD' %}
+                {# Work Authorization Document #}
+                <div class="mb-2">
+                    <strong>{{ artifact.content.wad_number }}</strong>
+                    {% if artifact.content.get('procedure_name') %}
+                    <span class="text-muted ms-2">{{ artifact.content.procedure_name }}</span>
+                    {% endif %}
+                </div>
+                {% if artifact.content.get('steps') %}
+                <ol class="list-group list-group-numbered small">
+                    {% for step in artifact.content.steps %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-1">
+                        {{ step.description | default('Step ' ~ loop.index) }}
+                        {% if step.get('signed_off') %}
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        {% else %}
+                        <i class="bi bi-circle text-muted"></i>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ol>
+                {% endif %}
+            {% elif artifact.content.get('level') and artifact.artifact_type == 'ESCALATION_NOTICE' %}
+                {# Escalation Notice #}
+                {% set level = artifact.content.level %}
+                <div class="alert {% if level == 'critical' %}alert-danger{% elif level == 'major' %}alert-warning{% else %}alert-info{% endif %} py-2 small mb-0">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>Escalation: {{ level | upper }}</strong>
+                    </div>
+                    {% if artifact.content.get('message') %}
+                    <p class="mb-1">{{ artifact.content.message }}</p>
+                    {% endif %}
+                    {% if artifact.content.get('expected') and artifact.content.get('actual') %}
+                    <small class="text-muted">
+                        Expected: {{ (artifact.content.expected / 3600) | round(1) }}h
+                        &middot; Actual: {{ (artifact.content.actual / 3600) | round(1) }}h
+                    </small>
+                    {% endif %}
+                </div>
             {% else %}
                 {# Fallback: dump entire content as JSON #}
                 <pre class="p-2 bg-light rounded small" style="max-height: 300px; overflow-y: auto;">{{ artifact.content | tojson(indent=2) }}</pre>

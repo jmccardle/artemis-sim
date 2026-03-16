@@ -32,6 +32,17 @@
 </div>
 {% endif %}
 
+<!-- Priority Work -->
+{% if missions %}
+<h5 class="mb-3"><i class="bi bi-lightning"></i> Priority Work</h5>
+<div id="available-work"
+     hx-get="/views/missions/{{ missions[0].id }}/available-work?role=nasa-contracts-officer"
+     hx-trigger="load, sse:task-updated"
+     hx-swap="innerHTML">
+    <p class="text-muted small">Loading...</p>
+</div>
+{% endif %}
+
 <!-- Pending Invoices -->
 <h5 class="mb-3"><i class="bi bi-receipt"></i> Pending Invoices</h5>
 <div id="invoice-review-section">

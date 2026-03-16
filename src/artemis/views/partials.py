@@ -90,3 +90,74 @@ async def facilities_board(
         "partials/facility/status_board.html",
         {"request": request, "facilities": facilities},
     )
+
+
+# ── Scheduling partials ──────────────────────────────────────────
+
+
+@router.get("/missions/{mission_id}/available-work", response_class=HTMLResponse)
+async def available_work_partial(
+    mission_id: uuid.UUID,
+    request: Request,
+    role: str | None = None,
+    contractor: str | None = None,
+    db: AsyncSession = Depends(get_db_session),
+):
+    from artemis.services.scheduling import get_available_work
+
+    work = await get_available_work(
+        db, mission_id=mission_id, role=role, contractor=contractor,
+    )
+    return templates.TemplateResponse(
+        "partials/scheduling/available_work.html",
+        {"request": request, "available_work": work, "mission_id": str(mission_id)},
+    )
+
+
+@router.get("/tasks/{task_id}/blocking", response_class=HTMLResponse)
+async def task_blocking_partial(
+    task_id: uuid.UUID,
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+):
+    from artemis.services.scheduling import get_blocking_analysis
+
+    analysis = await get_blocking_analysis(db, task_id)
+    return templates.TemplateResponse(
+        "partials/scheduling/blocking_detail.html",
+        {"request": request, "analysis": analysis},
+    )
+
+
+@router.get("/missions/{mission_id}/critical-path", response_class=HTMLResponse)
+async def critical_path_partial(
+    mission_id: uuid.UUID,
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+):
+    from artemis.services.scheduling import compute_critical_path
+
+    cp = await compute_critical_path(db, mission_id)
+    return templates.TemplateResponse(
+        "partials/scheduling/critical_path.html",
+        {"request": request, "critical_path": cp, "mission_id": str(mission_id)},
+    )
+
+
+@router.get("/tasks/{task_id}/suggestions", response_class=HTMLResponse)
+async def work_suggestions_partial(
+    task_id: uuid.UUID,
+    request: Request,
+    role: str | None = None,
+    db: AsyncSession = Depends(get_db_session),
+):
+    from artemis.services.scheduling import get_work_suggestions
+
+    task = await task_svc.get_task(db, task_id)
+    suggestions = await get_work_suggestions(
+        db, task.mission_id, role=role or "", blocked_task_id=task_id,
+    )
+    return templates.TemplateResponse(
+        "partials/scheduling/work_suggestions.html",
+        {"request": request, "suggestions": suggestions, "blocked_task_name": task.name},
+    )
